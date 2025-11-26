@@ -1,0 +1,334 @@
+Prompt for an AI agent — Build an interactive, Docker-deployable web application (saves data + visualizes progress)
+
+Goal for the AI agent:
+Create a fully working interactive web application that implements the Refactored Unified Zero-Budget Automation Roadmap as an operational training tracker. The app must persist user and progress data, provide CRUD operations for roadmap entities (weeks, days, tasks, artifacts), display dashboards and graphs visualizing goals and accomplishments, be deployable locally using Docker (with docker-compose), and include developer deliverables (README, Postman collection or OpenAPI, migrations, seed data, tests and instructions to run). Produce a Git repository-ready project that can be run locally.
+
+High-level requirements (must satisfy)
+
+Persistence & Local Docker deployment
+
+Use a server and database configured to run with docker-compose (one command up/down).
+
+Database must be persisted across container restarts (volume).
+
+Provide a Dockerfile for backend and frontend (or a single multi-stage Dockerfile) and a docker-compose.yml that starts at minimum: backend, frontend, and database.
+
+Provide seed data representing the full 6-week roadmap (weeks, days, activities, expected outputs).
+
+Core features
+
+User management (lightweight): sign up, sign in, sign out. Passwords may be hashed. Social/OAuth optional — not required.
+
+Roadmap model: Weeks → Days → Focus Areas → Activities → Artifacts.
+
+Daily progress tracking: users can mark activities as Not Started / In Progress / Done, add notes, attach links or small files (optional).
+
+Capstone & artifacts tracking: ability to upload a link or file reference for each capstone and mark it completed.
+
+Statistics & visualizations:
+
+Completion percentage per week and overall.
+
+Time series showing tasks completed per day.
+
+Breakdown by tool/category (Postman, n8n, Apps Script, etc.).
+
+Leaderboard or personal streaks (optional).
+
+Interactive charts (hover, filter by week) on the dashboard.
+
+Export/Import:
+
+Export user progress to JSON/CSV.
+
+Import progress from JSON (idempotent merge).
+
+API:
+
+RESTful JSON API (or GraphQL) with full CRUD for users and roadmap entities.
+
+Provide OpenAPI spec (swagger) or Postman collection.
+
+UX / Frontend
+
+Single Page Application (React recommended; alternatives acceptable: Vue, Svelte).
+
+Clear UI to navigate weeks/days, mark tasks, view artifacts and open capstone videos/docs.
+
+Dashboard route with interactive graphs (use Chart.js or lightweight D3; must be client-side interactive).
+
+Responsive layout — usable on desktop and tablet sized screens.
+
+Backend
+
+Recommended: Node.js/Express + ORM (Prisma / TypeORM / Sequelize) or Python/FastAPI + SQLModel/SQLAlchemy.
+
+Provide migrations and seed scripts.
+
+Provide sensible environment variable configuration via .env (example .env.example).
+
+Server exposes API and static frontend assets (or run frontend separately).
+
+Tech constraints
+
+App must run locally on common platforms (Linux/macOS/Windows via Docker).
+
+Use only free/open source libraries and free-tier compatible APIs.
+
+Keep external network calls optional; include mock data for external API demos (e.g., weather API used in Week 1 can be mocked).
+
+Documentation & QA
+
+README.md with quick start, how to run locally, how to run tests, expected ports, and how to seed data.
+
+Provide docker-compose up --build example that starts app on http://localhost:3000 (frontend) and http://localhost:4000 (backend) or similar.
+
+Provide at least:
+
+One integration test for a key backend endpoint (e.g., user creates progress entry).
+
+One UI test or E2E test scenario (Cypress or Playwright) that marks one day’s activities done and asserts dashboard changes.
+
+Provide Postman collection or OpenAPI JSON/YAML and instructions to import.
+
+Security & robustness
+
+Use password hashing for user accounts.
+
+Validate and sanitize inputs.
+
+Provide graceful handling if AI or external API returns malformed data (if integration included).
+
+Rate limiting optional but appreciated.
+
+Deliverables (what the agent must produce)
+
+A git repo structure in the project root including:
+
+backend/ and frontend/ (or a monorepo with api/ and web/)
+
+docker-compose.yml, README.md, .env.example
+
+Database migrations and seed script
+
+OpenAPI (swagger) or Postman collection
+
+Sample data file seed/roadmap-seed.json containing the 6-week roadmap
+
+Tests folder and commands to run them
+
+A short demo script in the README describing how to:
+
+Create a user and sign in
+
+Mark tasks complete
+
+View dashboard visualizations
+
+Export progress
+
+Data model (required fields — agent must implement)
+
+Tables / Collections
+
+users
+
+id, email (unique), password_hash, name, created_at, updated_at
+
+roadmap_weeks
+
+id, week_number (1..6), title, description
+
+roadmap_days
+
+id, week_id, day_number (1..7), title, focus_area, detailed_activities (text/markdown), expected_output
+
+activities (subtasks for a day)
+
+id, day_id, title, description, tool_tags (array/string), order_index
+
+user_progress
+
+id, user_id, activity_id, status (enum: not_started, in_progress, done), notes (text), evidence_url (string), file_ref (optional), completed_at (nullable datetime), updated_at
+
+artifacts
+
+id, user_id, day_id (nullable), title, description, link, file_ref, visibility (private/public), created_at
+
+metrics (optional derived table)
+
+store daily aggregates if needed: user_id, date, completed_count, weekly_completion_percent
+
+Make sure relations and indexes are created.
+
+Minimal API Spec (examples)
+
+POST /api/auth/signup — create user
+
+POST /api/auth/login — returns JWT or session cookie
+
+GET /api/roadmap/weeks — list weeks with nested days and activities
+
+GET /api/roadmap/weeks/:id — full week details
+
+GET /api/days/:id — day details + activities
+
+POST /api/progress — create/update a user progress entry
+
+GET /api/users/:id/progress — user progress (filter by week/day)
+
+POST /api/artifacts — upload/register artifact (link or metadata)
+
+GET /api/dashboard — returns aggregated stats for charts (or the frontend may compute from /progress)
+
+All endpoints must return JSON and appropriate HTTP status codes.
+
+Dashboard visualization requirements
+
+Implement at least the following charts/components in the Dashboard:
+
+Overall completion ring / progress bar
+
+Percent complete of all roadmap activities for the user.
+
+Weekly completion bar chart
+
+X axis: Week 1..6, Y axis: percent complete.
+
+Tasks completed per day (time series)
+
+Line chart showing daily completions for the last 30 days or since user start.
+
+Tool / Focus area breakdown
+
+Pie or stacked bar showing distribution of completed tasks by tool_tags (Postman, Activepieces, n8n, Apps Script, AI).
+
+Charts must be interactive: hover tooltips and ability to filter by week or date range.
+
+UX flows the agent must implement (happy path)
+
+Sign up → sign in → see an onboarding modal describing the 6-week program.
+
+Navigate to Week 1 → Day 1 → see list of activities → mark one as Done → add note and link to artifact.
+
+Go to Dashboard → confirm charts reflect the change (completion percent increased, time series shows increment).
+
+Upload or paste link to Capstone artifact and mark Capstone complete.
+
+Export progress as JSON/CSV.
+
+Implementation guidance (recommended stack — agent can choose alternatives if justified)
+
+Frontend: React (Vite) + TypeScript + Tailwind CSS. Use React Router for routes. Use Chart.js (react-chartjs-2) for visuals. Keep design clean and functional.
+
+Backend: Node.js + TypeScript + Express or Fastify. Use Prisma ORM with PostgreSQL (recommended) or SQLite for zero-config. Provide migrations and seed script.
+
+Database: PostgreSQL (via Docker) recommended. If choosing SQLite, ensure Docker volume maps DB file to host to persist data.
+
+Auth: JWT stored in HttpOnly cookie or localStorage (document decision in README).
+
+File storage: For uploaded artifacts use a simple local volume inside Docker mapped to host (no external S3). Provide size limits.
+
+Testing: Jest + Supertest for API tests; Playwright or Cypress for one E2E test.
+
+Linting / Formatting: eslint and prettier configs.
+
+CI: Optional — provide a GitHub Actions workflow that runs tests on push.
+
+Acceptance criteria (automated + manual checks)
+
+Automated checks (must pass in CI locally):
+
+docker-compose up --build completes, services start without errors.
+
+Backend /api/roadmap/weeks returns seeded roadmap JSON.
+
+A seeded user can authenticate via login endpoint.
+
+Creating a progress entry updates user_progress and GET /api/users/:id/progress returns it.
+
+At least one integration test that asserts progress creation and that GET /api/dashboard shows changed aggregate.
+
+Manual checks (documented in README):
+
+Frontend accessible at http://localhost:3000 and shows Dashboard.
+
+User can mark activities done and see dashboard visuals update.
+
+Exported JSON matches format of database schema and can be imported.
+
+Deliver a final audit summary (agent must generate)
+
+At the end of the run (when committing the repo), produce a DELIVERY.md that includes:
+
+How to run locally (full commands).
+
+Ports used.
+
+Example curl commands to exercise the API.
+
+How to reset DB and reseed data.
+
+Known limitations and potential improvements (i.e., optional features not implemented).
+
+A short automated test report (what passed/failed).
+
+Example seed data requirement
+
+Provide a seed/roadmap-seed.json that faithfully encodes the provided 6-week program including:
+
+Week titles and descriptions (Phase names).
+
+Day entries with focus area, detailed activities (include bulleted items), expected outputs/portfolio artifacts.
+
+Tag each activity with tool_tags using words from the roadmap (e.g., postman, n8n, apps_script, activepieces, prisma, react, chartjs, ai).
+
+Developer instructions for the AI agent when producing code
+
+Commit code to a root-level git structure (simulate commit messages in DELIVERY.md if actual remote repo is not created).
+
+Keep secrets out of the repo (.env must be in .gitignore; include .env.example).
+
+Make the app startable with docker-compose up --build and stoppable via docker-compose down.
+
+Keep the code modular with clear separation between api and web.
+
+Prefer TypeScript for maintainability. If using Python, document differences and test steps.
+
+Extra credit (optional, but desirable)
+
+Demo script or short GIFs showing marking tasks and the dashboard changing (can be simple instructions for the user to record).
+
+Slack webhook or email notification when a capstone is marked completed (can be mocked or optional integration).
+
+Basic role support: user and admin with admin able to modify roadmap content.
+
+Output format required from the AI agent
+
+The AI agent must return (in the response to this prompt) a single ZIP file download link or a clear file structure tree with commands and a minimal README if generating code in the environment is not possible. If the agent cannot produce a downloadable repo, it must output:
+
+docker-compose.yml content
+
+backend/Dockerfile and frontend/Dockerfile content (or a mono Dockerfile)
+
+package.json (or pyproject.toml), showing dependencies
+
+The seed JSON file seed/roadmap-seed.json
+
+README.md with quick start
+
+One working API file or main server file (sufficient to reconstruct the project)
+
+Preferably, provide the full repo. If limitations require partial output, provide best-effort code and clearly mark missing pieces in DELIVERY.md.
+
+Tone and constraints for implementation messages
+
+Provide concise, actionable commit messages on each major change.
+
+When the agent documents choices (e.g., why Postgres vs SQLite), be explicit and rational.
+
+Do not call external paid services; keep everything runnable locally.
+
+Final note
+
+This prompt must produce a developer-ready project that a junior automation engineer can run locally, use to demonstrate the 6-week program, and show to potential employers. Prioritize correctness and reproducibility over bells and whistles.

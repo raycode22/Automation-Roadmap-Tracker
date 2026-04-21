@@ -1,6 +1,7 @@
 # Technical Automation Architect Bootcamp
 
-A fully functional, interactive React web application that houses a 2-week intensive bootcamp curriculum. Built with React, Tailwind CSS, and Lucide Icons.
+A fully functional, interactive React web application that houses a 2-week intensive bootcamp curriculum. 
+Built with React, Tailwind CSS, and Lucide Icons.
 
 ## 🎯 Features
 

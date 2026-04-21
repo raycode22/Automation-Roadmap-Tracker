@@ -5,12 +5,19 @@ A fully functional, interactive React web application that houses a 2-week inten
 ## 🎯 Features
 
 ✅ **Responsive Sidebar Navigation** - Collapsible accordions for Week 1 and Week 2 with Day 1-10 lessons
+
 ✅ **Clean Content Area** - Typography-optimized reading pane with markdown-style formatting
+
 ✅ **Progress Tracking** - Mark lessons complete with persistent localStorage storage
+
 ✅ **Visual Progress Bar** - Real-time progress visualization across 10 lessons
+
 ✅ **Interactive Checkmarks** - Visual feedback for completed lessons in the sidebar
+
 ✅ **Minimalist Design** - Clean white/gray aesthetic inspired by The Odin Project and FreeCodeCamp
+
 ✅ **Fully Responsive** - Works seamlessly on desktop, tablet, and mobile devices
+
 ✅ **Complete Curriculum** - 10 days of technical automation content with learning objectives and hands-on projects
 
 ## 📚 Curriculum Overview

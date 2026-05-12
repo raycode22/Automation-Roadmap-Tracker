@@ -14,6 +14,7 @@ import {
   Sun,
   Menu,
   X,
+  Tent,
 } from "lucide-react";
 import bootcampData from "./bootcampData.js";
 
@@ -25,13 +26,33 @@ const BootcampApp = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Load progress and theme from localStorage
+  // Load progress and theme from localStorage, or use system preference
   useEffect(() => {
     const saved = localStorage.getItem("bootcampProgress");
     if (saved) setCompletedLessons(JSON.parse(saved));
 
     const savedTheme = localStorage.getItem("bootcampTheme");
-    if (savedTheme) setDarkMode(JSON.parse(savedTheme));
+    if (savedTheme !== null) {
+      setDarkMode(JSON.parse(savedTheme));
+    } else {
+      // Use system preference if no saved theme
+      const systemDarkMode = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      setDarkMode(systemDarkMode);
+    }
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleThemeChange = (e) => {
+      const savedTheme = localStorage.getItem("bootcampTheme");
+      // Only auto-update if user hasn't manually set a preference
+      if (savedTheme === null) {
+        setDarkMode(e.matches);
+      }
+    };
+    mediaQuery.addEventListener("change", handleThemeChange);
+    return () => mediaQuery.removeEventListener("change", handleThemeChange);
   }, []);
 
   // Save progress to localStorage
@@ -137,11 +158,11 @@ const BootcampApp = () => {
         className={`md:hidden sticky top-0 z-50 flex items-center justify-between p-4 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border-b`}
       >
         <div className="flex items-center gap-2">
-          <BookOpen size={20} className="text-blue-600" />
+          <Tent size={20} className="text-blue-600" />
           <h1
             className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}
           >
-            Bootcamp
+            Ray's Bootcamp
           </h1>
         </div>
         <div className="flex items-center gap-2">

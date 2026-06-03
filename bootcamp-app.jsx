@@ -147,7 +147,9 @@ const BootcampApp = () => {
         </p>
       </div>
     );
-  };
+  });
+
+  CircularProgress.displayName = "CircularProgress";
 
   return (
     <div
@@ -167,13 +169,13 @@ const BootcampApp = () => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setDarkMode(!darkMode)}
+            onClick={toggleDarkMode}
             className={`p-2 rounded-lg transition ${darkMode ? "bg-gray-700 text-yellow-400 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={toggleSidebar}
             className={`p-2 rounded-lg transition ${darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"}`}
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
@@ -185,7 +187,7 @@ const BootcampApp = () => {
       {sidebarOpen && (
         <div
           className="fixed inset-0 md:hidden bg-black bg-opacity-50 z-30 top-16"
-          onClick={() => setSidebarOpen(false)}
+          onClick={toggleSidebar}
         />
       )}
 
@@ -206,7 +208,7 @@ const BootcampApp = () => {
               </h1>
             </div>
             <button
-              onClick={() => setDarkMode(!darkMode)}
+              onClick={toggleDarkMode}
               className={`p-2 rounded-lg transition ${darkMode ? "bg-gray-700 text-yellow-400 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
               title={darkMode ? "Light mode" : "Dark mode"}
             >
@@ -259,47 +261,43 @@ const BootcampApp = () => {
                     {weekLessons.map((item) => (
                       <button
                         key={item.day}
-                        onClick={() => {
-                          setCurrentDay(item.day);
-                          setActiveTab("lessons");
-                          setSidebarOpen(false);
-                        }}
-                        className={`w-full px-4 md:px-6 py-2 md:py-3 text-left flex items-center gap-3 transition text-sm md:text-base ${currentDay === item.day
-                          ? darkMode
-                            ? "bg-blue-900 border-l-4 border-blue-400"
-                            : "bg-blue-50 border-l-4 border-blue-600"
-                          : darkMode
-                            ? "hover:bg-gray-600"
-                            : "hover:bg-gray-100"
-                          }`}
-                      >
-                        {isCompleted(item.day) ? (
-                          <CheckCircle2
-                            size={18}
-                            className="text-green-500 flex-shrink-0"
-                          />
-                        ) : (
-                          <Circle
-                            size={18}
-                            className={`flex-shrink-0 ${darkMode ? "text-gray-600" : "text-gray-400"}`}
-                          />
-                        )}
-                        <span
-                          className={`${currentDay === item.day
-                            ? darkMode
-                              ? "font-semibold text-white"
-                              : "font-semibold text-gray-900"
-                            : darkMode
-                              ? "text-gray-300"
-                              : "text-gray-700"
-                            }`}
-                        >
-                          Day {item.day}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                        onClick={() => handleDaySelect(item.day)}
+                    className={`w-full px-4 md:px-6 py-2 md:py-3 text-left flex items-center gap-3 transition text-sm md:text-base ${currentDay === item.day
+                      ? darkMode
+                        ? "bg-blue-900 border-l-4 border-blue-400"
+                        : "bg-blue-50 border-l-4 border-blue-600"
+                      : darkMode
+                        ? "hover:bg-gray-600"
+                        : "hover:bg-gray-100"
+                      }`}
+                  >
+                    {isCompleted(item.day) ? (
+                      <CheckCircle2
+                        size={18}
+                        className="text-green-500 flex-shrink-0"
+                      />
+                    ) : (
+                      <Circle
+                        size={18}
+                        className={`flex-shrink-0 ${darkMode ? "text-gray-600" : "text-gray-400"}`}
+                      />
+                    )}
+                    <span
+                      className={`${currentDay === item.day
+                        ? darkMode
+                          ? "font-semibold text-white"
+                          : "font-semibold text-gray-900"
+                        : darkMode
+                          ? "text-gray-300"
+                          : "text-gray-700"
+                        }`}
+                    >
+                      Day {item.day}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
               </div>
             );
           })}
@@ -309,10 +307,7 @@ const BootcampApp = () => {
             className={`border-t ${darkMode ? "border-gray-700" : "border-gray-100"} p-3 md:p-4 mt-4 space-y-2`}
           >
             <button
-              onClick={() => {
-                setActiveTab("lessons");
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange("lessons")}
               className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "lessons"
                 ? darkMode
                   ? "bg-blue-900 text-blue-300"
@@ -325,10 +320,7 @@ const BootcampApp = () => {
               <BookOpen size={16} /> Lessons
             </button>
             <button
-              onClick={() => {
-                setActiveTab("resources");
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange("resources")}
               className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "resources"
                 ? darkMode
                   ? "bg-blue-900 text-blue-300"
@@ -341,10 +333,7 @@ const BootcampApp = () => {
               <ExternalLink size={16} /> Resources
             </button>
             <button
-              onClick={() => {
-                setActiveTab("reference");
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange("reference")}
               className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "reference"
                 ? darkMode
                   ? "bg-blue-900 text-blue-300"
@@ -357,10 +346,7 @@ const BootcampApp = () => {
               <Lightbulb size={16} /> Quick Ref
             </button>
             <button
-              onClick={() => {
-                setActiveTab("checklists");
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange("checklists")}
               className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "checklists"
                 ? darkMode
                   ? "bg-blue-900 text-blue-300"
@@ -373,10 +359,7 @@ const BootcampApp = () => {
               <ClipboardList size={16} /> Checklist
             </button>
             <button
-              onClick={() => {
-                setActiveTab("instructor");
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange("instructor")}
               className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "instructor"
                 ? darkMode
                   ? "bg-blue-900 text-blue-300"

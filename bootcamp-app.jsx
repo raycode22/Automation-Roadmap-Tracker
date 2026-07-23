@@ -720,6 +720,18 @@ const BootcampApp = () => {
             </>
           )}
 
+          {activeTab === "lessons" && !lesson && (
+            <div className={`p-8 rounded-xl border-2 text-center ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+              <BookOpen size={48} className={`mx-auto mb-4 ${darkMode ? "text-gray-600" : "text-gray-400"}`} />
+              <h2 className={`text-xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                Select a Lesson to Begin
+              </h2>
+              <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                Choose a lesson from the sidebar to start learning
+              </p>
+            </div>
+          )}
+
           {activeTab === "lessons" && lesson && (
             <>
               {/* Header */}

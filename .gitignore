@@ -1,33 +1,4 @@
-# Dependencies
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Build output
-dist/
-build/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Development
-.cache/
-.parcel-cache/
-
-# OS
-Thumbs.db
-.DS_Store
-
-# Logs
-logs/
-*.log
+```javascript
+// No build artifacts, dependencies, or temporary files detected in changes
+// Only JSX source file modified
+```

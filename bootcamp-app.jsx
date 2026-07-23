@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ChevronDown,
   CheckCircle2,
@@ -22,9 +22,31 @@ const BootcampApp = () => {
   const [currentDay, setCurrentDay] = useState(1);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false });
-  const [activeTab, setActiveTab] = useState("lessons"); // 'lessons', 'resources', 'reference', 'checklists'
+  const [activeTab, setActiveTab] = useState("lessons");
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const curriculum = bootcampData.lessons;
+
+  // Memoized handlers with useCallback
+  const toggleWeek = useCallback((week) => {
+    setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
+  }, []);
+
+  const toggleCompletion = useCallback((day) => {
+    setCompletedLessons((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+  }, []);
+
+  const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
+
+  const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);
+  
+  const progressPercent = useMemo(() => 
+    Math.round((completedLessons.length / curriculum.length) * 100),
+    [completedLessons.length, curriculum.length]
+  );
 
   // Load progress and theme from localStorage, or use system preference
   useEffect(() => {
@@ -55,37 +77,14 @@ const BootcampApp = () => {
     return () => mediaQuery.removeEventListener("change", handleThemeChange);
   }, []);
 
-  // Save progress to localStorage
+  // Save progress and theme to localStorage (combined into single effect)
   useEffect(() => {
     localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
-  }, [completedLessons]);
-
-  // Save theme to localStorage
-  useEffect(() => {
     localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
-  }, [darkMode]);
+  }, [completedLessons, darkMode]);
 
-  const toggleWeek = (week) => {
-    setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
-  };
-
-  const toggleCompletion = (day) => {
-    setCompletedLessons((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-    );
-  };
-
-  const isCompleted = (day) => completedLessons.includes(day);
-
-  const curriculum = bootcampData.lessons;
-
-  const lesson = curriculum.find((l) => l.day === currentDay);
-  const progressPercent = Math.round(
-    (completedLessons.length / curriculum.length) * 100,
-  );
-
-  // Circular progress component
-  const CircularProgress = ({ percent, size = 120 }) => {
+  // Circular progress component - memoized to prevent unnecessary re-renders
+  const CircularProgress = React.memo(({ percent, size = 120, darkMode, curriculumLength }) => {
     const radius = (size - 8) / 2;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percent / 100) * circumference;
@@ -143,11 +142,18 @@ const BootcampApp = () => {
         <p
           className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}
         >
-          {completedLessons.length} of {curriculum.length} days
+          {completedLessons.length} of {curriculumLength} days
         </p>
       </div>
     );
-  };
+  }, (prev, next) => {
+    // Custom comparison to prevent re-renders when props haven't meaningfully changed
+    return prev.percent === next.percent && prev.size === next.size && prev.darkMode === next.darkMode && prev.curriculumLength === next.curriculumLength;
+  });
+
+  // Memoized week lessons to prevent recalculating on every render
+  const week1Lessons = useMemo(() => curriculum.filter((l) => l.week === 1), [curriculum]);
+  const week2Lessons = useMemo(() => curriculum.filter((l) => l.week === 2), [curriculum]);
 
   return (
     <div
@@ -223,7 +229,7 @@ const BootcampApp = () => {
           <div
             className={`px-4 md:px-6 py-4 md:py-6 border-b ${darkMode ? "border-gray-700" : "border-gray-100"}`}
           >
-            <CircularProgress percent={progressPercent} size={100} />
+            <CircularProgress percent={progressPercent} size={100} darkMode={darkMode} curriculumLength={curriculum.length} />
           </div>
         </div>
 
@@ -232,8 +238,8 @@ const BootcampApp = () => {
           className="overflow-y-auto"
           style={{ maxHeight: "calc(100vh - 280px)" }}
         >
-          {[1, 2].map((week) => {
-            const weekLessons = curriculum.filter((l) => l.week === week);
+          {[week1Lessons, week2Lessons].map((weekLessons, idx) => {
+            const week = idx + 1;
             return (
               <div
                 key={week}

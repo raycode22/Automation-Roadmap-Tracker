@@ -15,18 +15,102 @@ import {
   Menu,
   X,
   Tent,
+  BarChart3,
+  Clock,
+  Trophy,
+  TrendingUp,
+  Calendar,
+  Award,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+} from "recharts";
 import bootcampData from "./bootcampData.js";
 
 const BootcampApp = () => {
   const [currentDay, setCurrentDay] = useState(1);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false });
-  const [activeTab, setActiveTab] = useState("lessons");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [lessonTimeSpent, setLessonTimeSpent] = useState({});
+  const [currentLessonStartTime, setCurrentLessonStartTime] = useState(null);
 
   const curriculum = bootcampData.lessons;
+
+  // Track time spent on lessons
+  useEffect(() => {
+    if (activeTab === "lessons" && currentDay) {
+      setCurrentLessonStartTime(Date.now());
+    } else if (currentLessonStartTime) {
+      const timeSpent = Math.round((Date.now() - currentLessonStartTime) / 1000);
+      setLessonTimeSpent(prev => ({
+        ...prev,
+        [currentDay]: (prev[currentDay] || 0) + timeSpent
+      }));
+      setCurrentLessonStartTime(null);
+    }
+  }, [activeTab, currentDay]);
+
+  // Save lesson time to localStorage
+  useEffect(() => {
+    localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
+  }, [lessonTimeSpent]);
+
+  // Analytics calculations
+  const analytics = useMemo(() => {
+    const timeData = Object.entries(lessonTimeSpent).map(([day, seconds]) => ({
+      day: parseInt(day),
+      timeSpent: seconds,
+      title: curriculum.find(l => l.day === parseInt(day))?.title || `Day ${day}`
+    }));
+
+    const sortedByTime = [...timeData].sort((a, b) => b.timeSpent - a.timeSpent);
+    const longestLesson = sortedByTime[0];
+    const fastestLesson = sortedByTime.length > 1 ? sortedByTime[sortedByTime.length - 1] : null;
+
+    const weeklyProgress = [1, 2].map(week => {
+      const weekLessons = curriculum.filter(l => l.week === week);
+      const completedWeekLessons = weekLessons.filter(l => completedLessons.includes(l.day));
+      return {
+        week: `Week ${week}`,
+        completed: completedWeekLessons.length,
+        total: weekLessons.length,
+        percentage: Math.round((completedWeekLessons.length / weekLessons.length) * 100)
+      };
+    });
+
+    const categoryData = useMemo(() => {
+      const categories = {};
+      curriculum.forEach(lesson => {
+        const status = lesson.status || 'general';
+        if (!categories[status]) {
+          categories[status] = { name: status, completed: 0, total: 0 };
+        }
+        categories[status].total++;
+        if (completedLessons.includes(lesson.day)) {
+          categories[status].completed++;
+        }
+      });
+      return Object.values(categories);
+    }, [completedLessons, curriculum]);
+
+    return { timeData, longestLesson, fastestLesson, weeklyProgress, categoryData };
+  }, [lessonTimeSpent, completedLessons, curriculum]);
 
   // Memoized handlers with useCallback
   const toggleWeek = useCallback((week) => {
@@ -52,6 +136,9 @@ const BootcampApp = () => {
   useEffect(() => {
     const saved = localStorage.getItem("bootcampProgress");
     if (saved) setCompletedLessons(JSON.parse(saved));
+
+    const savedTime = localStorage.getItem("lessonTimeSpent");
+    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
 
     const savedTheme = localStorage.getItem("bootcampTheme");
     if (savedTheme !== null) {
@@ -316,6 +403,22 @@ const BootcampApp = () => {
           >
             <button
               onClick={() => {
+                setActiveTab("dashboard");
+                setSidebarOpen(false);
+              }}
+              className={`w-full px-3 py-2 text-sm rounded flex items-center gap-2 transition min-h-[44px] ${activeTab === "dashboard"
+                ? darkMode
+                  ? "bg-blue-900 text-blue-300"
+                  : "bg-blue-100 text-blue-700"
+                : darkMode
+                  ? "text-gray-300 hover:bg-gray-700"
+                  : "text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              <BarChart3 size={16} /> Dashboard
+            </button>
+            <button
+              onClick={() => {
                 setActiveTab("lessons");
                 setSidebarOpen(false);
               }}
@@ -402,7 +505,221 @@ const BootcampApp = () => {
       <main
         className={`flex-1 overflow-y-auto w-full ${darkMode ? "bg-gray-900" : "bg-white"}`}
       >
-        <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-12">
+          {activeTab === "dashboard" && (
+            <>
+              {/* Dashboard Header */}
+              <div className="mb-8">
+                <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Learning Dashboard
+                </h1>
+                <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  Track your progress to become a Technical Automation Architect
+                </p>
+              </div>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-blue-900 bg-opacity-20 border-blue-700" : "bg-blue-50 border-blue-200"}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Trophy size={24} className="text-yellow-500" />
+                    <span className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Completed</span>
+                  </div>
+                  <div className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {completedLessons.length}/{curriculum.length}
+                  </div>
+                  <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>lessons done</div>
+                </div>
+
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <TrendingUp size={24} className="text-green-500" />
+                    <span className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Progress</span>
+                  </div>
+                  <div className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {progressPercent}%
+                  </div>
+                  <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>overall completion</div>
+                </div>
+
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-purple-900 bg-opacity-20 border-purple-700" : "bg-purple-50 border-purple-200"}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Clock size={24} className="text-purple-500" />
+                    <span className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Time Spent</span>
+                  </div>
+                  <div className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0) / 60)}m
+                  </div>
+                  <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>total learning time</div>
+                </div>
+
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-orange-900 bg-opacity-20 border-orange-700" : "bg-orange-50 border-orange-200"}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Award size={24} className="text-orange-500" />
+                    <span className={`text-sm font-semibold ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Streak</span>
+                  </div>
+                  <div className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {completedLessons.length > 0 ? completedLessons.length : 0}
+                  </div>
+                  <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>days active</div>
+                </div>
+              </div>
+
+              {/* Charts Row 1 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Time Spent Per Lesson */}
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                  <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    <Clock size={20} className="text-blue-500" />
+                    Time Spent Per Lesson
+                  </h2>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={analytics.timeData.length > 0 ? analytics.timeData : [{day: 0, timeSpent: 0, title: 'No data yet'}]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
+                      <XAxis 
+                        dataKey="day" 
+                        tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+                        label={{ value: 'Day', position: 'insideBottom', offset: -5, fill: darkMode ? "#9ca3af" : "#6b7280" }}
+                      />
+                      <YAxis 
+                        tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+                        label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: darkMode ? "#9ca3af" : "#6b7280" }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: darkMode ? "#1f2937" : "#fff", 
+                          border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
+                          borderRadius: '8px'
+                        }}
+                        labelStyle={{ color: darkMode ? "#fff" : "#111" }}
+                        formatter={(value) => [`${Math.round(value)}s`, 'Time']}
+                      />
+                      <Bar dataKey="timeSpent" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Progress by Category */}
+                <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                  <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    <Target size={20} className="text-green-500" />
+                    Progress by Topic
+                  </h2>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={analytics.categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="completed"
+                      >
+                        {analytics.categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: darkMode ? "#1f2937" : "#fff", 
+                          border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Records Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Longest Lesson */}
+                {analytics.longestLesson && (
+                  <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-red-900 bg-opacity-20 border-red-700" : "bg-red-50 border-red-200"}`}>
+                    <h2 className={`text-lg font-bold mb-3 flex items-center gap-2 ${darkMode ? "text-red-300" : "text-red-700"}`}>
+                      <Clock size={20} />
+                      Most Challenging Lesson
+                    </h2>
+                    <div className={`text-lg font-semibold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Day {analytics.longestLesson.day}: {analytics.longestLesson.title}
+                    </div>
+                    <div className={`text-3xl font-bold ${darkMode ? "text-red-400" : "text-red-600"}`}>
+                      {Math.round(analytics.longestLesson.timeSpent / 60)} minutes
+                    </div>
+                    <p className={`text-sm mt-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      This lesson took the longest time - consider reviewing the concepts again!
+                    </p>
+                  </div>
+                )}
+
+                {/* Fastest Lesson */}
+                {analytics.fastestLesson && (
+                  <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}`}>
+                    <h2 className={`text-lg font-bold mb-3 flex items-center gap-2 ${darkMode ? "text-green-300" : "text-green-700"}`}>
+                      <Zap size={20} />
+                      Quickest Lesson
+                    </h2>
+                    <div className={`text-lg font-semibold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Day {analytics.fastestLesson.day}: {analytics.fastestLesson.title}
+                    </div>
+                    <div className={`text-3xl font-bold ${darkMode ? "text-green-400" : "text-green-600"}`}>
+                      {analytics.fastestLesson.timeSpent} seconds
+                    </div>
+                    <p className={`text-sm mt-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      You mastered this one quickly! Great job understanding these concepts.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Weekly Progress */}
+              <div className={`p-6 rounded-xl border-2 mb-6 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  <Calendar size={20} className="text-orange-500" />
+                  Weekly Progress
+                </h2>
+                <div className="space-y-4">
+                  {analytics.weeklyProgress.map((week) => (
+                    <div key={week.week}>
+                      <div className="flex justify-between mb-2">
+                        <span className={`font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{week.week}</span>
+                        <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                          {week.completed}/{week.total} lessons ({week.percentage}%)
+                        </span>
+                      </div>
+                      <div className={`w-full h-4 rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>
+                        <div 
+                          className="h-4 rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
+                          style={{ width: `${week.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Motivation Card */}
+              <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-gradient-to-r from-blue-900 to-purple-900 border-blue-700" : "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200"}`}>
+                <h2 className={`text-xl font-bold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  🎯 Your Path to Becoming Job-Ready
+                </h2>
+                <p className={`mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  You're building skills in API integration, automation workflows, AI-powered systems, and business problem-solving. 
+                  Keep going - each lesson brings you closer to becoming a Technical Automation Architect ready for 2026!
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {['APIs & Webhooks', 'JSON Data', 'Automation Tools', 'AI Integration', 'Business Systems'].map((skill) => (
+                    <span key={skill} className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-blue-800 text-blue-200" : "bg-blue-200 text-blue-800"}`}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {activeTab === "lessons" && lesson && (
             <>
               {/* Header */}

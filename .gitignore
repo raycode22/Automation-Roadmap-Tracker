@@ -1,4 +1,32 @@
-```javascript
-// No build artifacts, dependencies, or temporary files detected in changes
-// Only JSX source file modified
+```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Vite specific
+.node_modules/.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# OS generated
+.DS_Store
+Thumbs.db
 ```

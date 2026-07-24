@@ -1,16 +1,12 @@
 ```
-# Dependencies
-node_modules/
-
 # Build artifacts
 dist/
 build/
 *.js
+*.css
 
-# Environment
-.env
-.env.local
-.env.*
+# Dependencies
+node_modules/
 
 # Editors
 .vscode/
@@ -21,32 +17,8 @@ build/
 *.tmp
 *.swp
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Compiled and binary files
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Cache directories
-.mypy_cache/
-.pytest_cache/
-.cache/
+# Environment
+.env
+.env.local
+*.env.*
 ```

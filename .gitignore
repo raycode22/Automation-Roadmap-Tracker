@@ -1,28 +1,4 @@
 ```
-# Dependencies
-node_modules/
-
 # Build artifacts
 dist/
-build/
-
-# Vite specific
-.node_modules/
-.vite/
-
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
-.env.*
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
 ```

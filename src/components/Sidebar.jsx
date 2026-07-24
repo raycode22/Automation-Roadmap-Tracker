@@ -24,7 +24,6 @@ const navItems = [
   { id: "lessons", label: "Lessons", icon: BookOpen },
   { id: "resources", label: "Resources", icon: ExternalLink },
   { id: "reference", label: "Quick Ref", icon: Lightbulb },
-  { id: "checklists", label: "Checklist", icon: ClipboardList },
   { id: "instructor", label: "Instructor", icon: Tent },
 ];
 

@@ -51,6 +51,7 @@ const BootcampApp = () => {
   const [lessonTimeSpent, setLessonTimeSpent] = useState({});
   const [lessonStatus, setLessonStatus] = useState({}); // 'not_started', 'in_progress', 'completed'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [checklistState, setChecklistState] = useState({}); // Track checklist item completion per day
 
   const curriculum = bootcampData.lessons;
 
@@ -65,12 +66,20 @@ const BootcampApp = () => {
     const savedStatus = localStorage.getItem("lessonStatus");
     if (savedStatus) setLessonStatus(JSON.parse(savedStatus));
 
+    const savedChecklists = localStorage.getItem("checklistState");
+    if (savedChecklists) setChecklistState(JSON.parse(savedChecklists));
+
     const savedTheme = localStorage.getItem("bootcampTheme");
     if (savedTheme !== null) {
       setDarkMode(JSON.parse(savedTheme));
     } else {
       const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
       setDarkMode(systemDarkMode);
+    }
+
+    const savedSidebarCollapsed = localStorage.getItem("sidebarCollapsed");
+    if (savedSidebarCollapsed !== null) {
+      setSidebarCollapsed(JSON.parse(savedSidebarCollapsed));
     }
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -90,7 +99,9 @@ const BootcampApp = () => {
     localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
     localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
     localStorage.setItem("lessonStatus", JSON.stringify(lessonStatus));
-  }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus]);
+    localStorage.setItem("checklistState", JSON.stringify(checklistState));
+    localStorage.setItem("sidebarCollapsed", JSON.stringify(sidebarCollapsed));
+  }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus, checklistState, sidebarCollapsed]);
 
   // Handle starting a lesson
   const startLesson = useCallback((day) => {
@@ -102,11 +113,23 @@ const BootcampApp = () => {
     setActiveTab("lessons");
   }, []);
 
-  // Handle completing a lesson with time tracking
+  // Handle completing a lesson with time tracking and checklist validation
   const toggleCompletion = useCallback((day) => {
     const isCurrentlyCompleted = completedLessons.includes(day);
     
+    // Check if all checklists for this day are completed
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    const checklistItems = dayChecklist?.items || [];
+    const dayChecklistState = checklistState[day] || {};
+    const allChecklistsComplete = checklistItems.length === 0 || 
+      checklistItems.every((_, idx) => dayChecklistState[idx]);
+    
     if (!isCurrentlyCompleted) {
+      if (!allChecklistsComplete) {
+        alert('Please complete all checklist items before marking the lesson as complete.');
+        return;
+      }
+      
       // Mark as complete and record time
       const endTime = Date.now();
       const startTime = lessonStatus[day]?.startTime || endTime;
@@ -131,7 +154,30 @@ const BootcampApp = () => {
         [day]: 'not_started'
       }));
     }
-  }, [completedLessons, lessonStatus]);
+  }, [completedLessons, lessonStatus, checklistState]);
+
+  // Toggle checklist item completion
+  const toggleChecklistItem = useCallback((day, itemIndex) => {
+    setChecklistState(prev => {
+      const dayState = prev[day] || {};
+      return {
+        ...prev,
+        [day]: {
+          ...dayState,
+          [itemIndex]: !dayState[itemIndex]
+        }
+      };
+    });
+  }, []);
+
+  // Check if all checklists for a day are complete
+  const areAllChecklistsComplete = useCallback((day) => {
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    if (!dayChecklist || !dayChecklist.items || dayChecklist.items.length === 0) return true;
+    
+    const dayChecklistState = checklistState[day] || {};
+    return dayChecklist.items.every((_, idx) => dayChecklistState[idx]);
+  }, [checklistState]);
 
   const handleStartOrComplete = useCallback((day) => {
     const status = lessonStatus[day];
@@ -310,6 +356,9 @@ const BootcampApp = () => {
               isCompleted={isCompleted}
               toggleCompletion={toggleCompletion}
               darkMode={darkMode}
+              checklistState={checklistState}
+              toggleChecklistItem={toggleChecklistItem}
+              areAllChecklistsComplete={areAllChecklistsComplete}
             />
           )}
 
@@ -581,7 +630,11 @@ const EmptyState = ({ darkMode, icon: Icon, title, description }) => (
 );
 
 // Lesson View Component
-const LessonView = ({ lesson, currentDay, isCompleted, toggleCompletion, darkMode }) => (
+const LessonView = ({ lesson, currentDay, isCompleted, toggleCompletion, darkMode, checklistState, toggleChecklistItem, areAllChecklistsComplete }) => {
+  const dayChecklist = bootcampData.checklists.find(c => c.day === currentDay);
+  const allChecklistsComplete = areAllChecklistsComplete(currentDay);
+  
+  return (
   <>
     <div className="mb-8 md:mb-10">
       <div className="flex flex-wrap items-center gap-2 mb-3 md:mb-4">
@@ -602,6 +655,56 @@ const LessonView = ({ lesson, currentDay, isCompleted, toggleCompletion, darkMod
         {lesson.focus}
       </p>
     </div>
+
+    {/* Daily Checklist Section */}
+    {dayChecklist && dayChecklist.items && dayChecklist.items.length > 0 && (
+      <section className="mb-8 md:mb-10">
+        <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+          <ClipboardList size={20} className="md:w-6 md:h-6 text-green-600 flex-shrink-0" />
+          <h2 className={`text-xl md:text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+            Daily Checklist
+          </h2>
+        </div>
+        <div className={`p-4 md:p-6 rounded-lg border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`}>
+          <ul className="space-y-3">
+            {dayChecklist.items.map((item, idx) => {
+              const isChecked = checklistState[currentDay]?.[idx] || false;
+              return (
+                <li key={idx} className="flex items-start gap-3">
+                  <button
+                    onClick={() => toggleChecklistItem(currentDay, idx)}
+                    className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
+                      isChecked
+                        ? 'bg-green-600 border-green-600 text-white'
+                        : darkMode
+                        ? 'border-gray-500 hover:border-green-500'
+                        : 'border-gray-300 hover:border-green-500'
+                    }`}
+                  >
+                    {isChecked && <CheckCircle2 size={14} />}
+                  </button>
+                  <div className="flex-1">
+                    <p className={`text-sm md:text-base ${darkMode ? "text-gray-300" : "text-gray-700"} ${isChecked ? 'line-through opacity-60' : ''}`}>
+                      {item.task}
+                    </p>
+                    {item.time && (
+                      <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-500"}`}>
+                        ⏱️ {item.time}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {!allChecklistsComplete && (
+            <p className={`mt-4 text-sm ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}>
+              ⚠️ Complete all checklist items to unlock the "Mark as Complete" button
+            </p>
+          )}
+        </div>
+      </section>
+    )}
 
     {lesson.concepts && (
       <section className="mb-8 md:mb-10">
@@ -809,11 +912,16 @@ const LessonView = ({ lesson, currentDay, isCompleted, toggleCompletion, darkMod
     <div className={`mt-10 p-6 rounded-xl border-2 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
       <button
         onClick={() => toggleCompletion(currentDay)}
+        disabled={!allChecklistsComplete && !isCompleted(currentDay)}
         className={`w-full py-4 rounded-lg font-bold text-lg transition flex items-center justify-center gap-3 ${
           isCompleted(currentDay)
             ? darkMode
               ? "bg-green-700 hover:bg-green-600 text-white"
               : "bg-green-600 hover:bg-green-500 text-white"
+            : !allChecklistsComplete
+            ? darkMode
+              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
             : darkMode
             ? "bg-blue-700 hover:bg-blue-600 text-white"
             : "bg-blue-600 hover:bg-blue-500 text-white"
@@ -822,6 +930,10 @@ const LessonView = ({ lesson, currentDay, isCompleted, toggleCompletion, darkMod
         {isCompleted(currentDay) ? (
           <>
             <CheckCircle2 size={24} /> Mark as Incomplete
+          </>
+        ) : !allChecklistsComplete ? (
+          <>
+            <CheckCircle2 size={24} /> Complete Checklists First
           </>
         ) : (
           <>

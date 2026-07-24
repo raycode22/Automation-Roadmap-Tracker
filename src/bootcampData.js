@@ -722,32 +722,80 @@ const bootcampData = {
     ]
   },
   quickReference: {
-    apiMethods: [
-      { method: "GET", description: "Retrieve data from server" },
-      { method: "POST", description: "Send new data to server" },
-      { method: "PUT", description: "Update existing data" },
-      { method: "DELETE", description: "Remove data from server" }
+    httpMethods: [
+      { method: "GET", use: "Retrieve data from server", example: "/api/users" },
+      { method: "POST", use: "Create new resource", example: "/api/users" },
+      { method: "PUT", use: "Update entire resource", example: "/api/users/1" },
+      { method: "PATCH", use: "Partially update resource", example: "/api/users/1" },
+      { method: "DELETE", use: "Remove resource", example: "/api/users/1" }
     ],
-    httpStatusCodes: [
-      { code: "200", meaning: "OK - Request successful" },
-      { code: "201", meaning: "Created - Resource created" },
-      { code: "400", meaning: "Bad Request - Invalid input" },
-      { code: "401", meaning: "Unauthorized - Authentication required" },
-      { code: "404", meaning: "Not Found - Resource doesn't exist" },
-      { code: "500", meaning: "Server Error - Something went wrong" }
+    jsonStructure: {
+      description: "JSON (JavaScript Object Notation) is a lightweight data interchange format.",
+      example: `{
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "active": true,
+    "roles": ["admin", "editor"],
+    "metadata": {
+      "createdAt": "2024-01-15T10:30:00Z",
+      "lastLogin": "2024-01-20T14:22:00Z"
+    }
+  }
+}`
+    },
+    commonErrors: [
+      { error: "400 Bad Request", cause: "Invalid input or malformed request", fix: "Check request body and parameters" },
+      { error: "401 Unauthorized", cause: "Missing or invalid authentication", fix: "Include valid API key or token" },
+      { error: "403 Forbidden", cause: "Insufficient permissions", fix: "Verify user has required access rights" },
+      { error: "404 Not Found", cause: "Resource does not exist", fix: "Check URL and resource ID" },
+      { error: "429 Too Many Requests", cause: "Rate limit exceeded", fix: "Implement retry logic with backoff" },
+      { error: "500 Internal Server Error", cause: "Server-side failure", fix: "Check server logs, retry later" }
     ],
-    commonIntegrations: [
-      { service: "Slack", use: "Team notifications and alerts" },
-      { service: "Google Sheets", use: "Data storage and reporting" },
-      { service: "Airtable", use: "Database and project management" },
-      { service: "Stripe", use: "Payment processing" }
+    systemComponents: {
+      "frontend": "User interface (React, Vue, etc.)",
+      "backend": "Server-side logic and APIs",
+      "database": "Data storage (SQL, NoSQL)",
+      "cache": "Fast data retrieval (Redis, Memcached)",
+      "queue": "Async task processing (RabbitMQ, SQS)",
+      "cdn": "Content delivery network"
+    },
+    ghlPipelineExample: [
+      "New Lead",
+      "Contacted",
+      "Qualified",
+      "Proposal Sent",
+      "Negotiation",
+      "Closed Won",
+      "Closed Lost"
+    ],
+    n8nNodeTypes: [
+      "Trigger Nodes (Webhook, Schedule, App Events)",
+      "Action Nodes (HTTP Request, Code, Function)",
+      "Logic Nodes (IF, Switch, Merge)",
+      "Data Transformation (Set, Split In Batches)",
+      "Integration Nodes (App-specific connectors)"
     ]
   },
   instructor: {
-    name: "Technical Automation Bootcamp Team",
-    bio: "Industry professionals with years of experience building automation systems for businesses worldwide.",
+    name: "Ray - Technical Automation Architect",
+    bio: "I'm your guide through this intensive 14-day bootcamp. My mission is to transform you from a complete beginner into a job-ready Technical Automation Architect who can build sophisticated business systems using AI, APIs, and automation tools.",
     contact: "support@automationbootcamp.example",
-    officeHours: "Monday-Friday, 9am-5pm EST"
+    officeHours: "Monday-Friday, 9am-5pm EST",
+    expertise: [
+      { category: "Content & SEO Systems", description: "Creating SEO-optimized content workflows and automated publishing pipelines" },
+      { category: "Video & Graphics Production", description: "Automated video editing, thumbnail generation, and graphic design workflows" },
+      { category: "Funnel Building", description: "High-converting sales funnels with integrated tracking and optimization" },
+      { category: "Competitive Research", description: "Automated market analysis and competitor monitoring systems" },
+      { category: "Workflow Automation", description: "Complex multi-step automations connecting various business tools" },
+      { category: "AI Integration", description: "Implementing AI models for content generation, analysis, and decision making" }
+    ],
+    tools: [
+      "ChatGPT", "Claude", "Gemini", "Canva", "CapCut", 
+      "Zapier", "Make", "n8n", "Google Analytics", "Airtable",
+      "GoHighLevel", "Vapi", "Retell", "Bubble", "Softr"
+    ]
   }
 };
 

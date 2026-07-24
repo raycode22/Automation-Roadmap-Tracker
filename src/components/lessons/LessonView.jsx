@@ -259,13 +259,14 @@ const LessonView = ({
 
   // Start timer when lesson is viewed and lesson status is in_progress
   useEffect(() => {
-    const status = lessonStatus?.[currentDay];
+    const statusData = lessonStatus?.[currentDay];
+    const status = statusData?.status;
     if (status === 'in_progress' && !timerRunning) {
       setTimerRunning(true);
     } else if (status !== 'in_progress' && timerRunning) {
       setTimerRunning(false);
     }
-  }, [currentDay, lessonStatus]);
+  }, [currentDay, lessonStatus, timerRunning]);
 
   // Timer interval
   useEffect(() => {

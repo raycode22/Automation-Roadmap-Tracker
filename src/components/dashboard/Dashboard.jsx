@@ -1,15 +1,21 @@
 import React, { useMemo } from 'react';
 import { 
-  Trophy, TrendingUp, Clock, Award, Target, Calendar 
+  Trophy, TrendingUp, Clock, Award, Target, Calendar, Download
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import StatCard from './StatCard';
 import ChartCard from './ChartCard';
 import RecordCard from './RecordCard';
+import LearningHeatmap from '../LearningHeatmap';
+import ExportModal from '../ExportModal';
+import FocusMode from '../FocusMode';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, lessonTimeSpent, darkMode }) => {
+  const [showExportModal, setShowExportModal] = React.useState(false);
+  const [showFocusMode, setShowFocusMode] = React.useState(false);
+  
   // Helper function to format seconds as HH:MM:SS
   const formatTimeFull = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -33,26 +39,68 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
   };
   
   const totalTimeSpent = useMemo(() => {
-    return Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0));
+    return Math.round(Object.values(lessonTimeSpent).reduce((sum, t) => sum + t, 0));
+  }, [lessonTimeSpent]);
+
+  // Convert lessonTimeSpent to daily totals for heatmap
+  const dailyTimeData = useMemo(() => {
+    const dailyTotals = {};
+    Object.entries(lessonTimeSpent).forEach(([key, seconds]) => {
+      // Extract day from key (e.g., "Day 1-lesson-1" -> "Day 1")
+      const dayMatch = key.match(/(Day \d+)/);
+      if (dayMatch) {
+        const day = dayMatch[1];
+        dailyTotals[day] = (dailyTotals[day] || 0) + seconds;
+      }
+    });
+    return dailyTotals;
   }, [lessonTimeSpent]);
 
   return (
     <>
       <div className="mb-8">
-        <h1 
-          className={`text-3xl md:text-4xl font-bold mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          Learning Dashboard
-        </h1>
-        <p 
-          className={`text-lg ${
-            darkMode ? 'text-gray-400' : 'text-gray-600'
-          }`}
-        >
-          Track your progress to become a Technical Automation Architect
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 
+              className={`text-3xl md:text-4xl font-bold mb-2 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              Learning Dashboard
+            </h1>
+            <p 
+              className={`text-lg ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}
+            >
+              Track your progress to become a Technical Automation Architect
+            </p>
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFocusMode(true)}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              title="Enter Focus Mode"
+            >
+              <Target className="w-5 h-5" />
+              <span className="hidden sm:inline">Focus Mode</span>
+            </button>
+            
+            <button
+              onClick={() => setShowExportModal(true)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                darkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+              }`}
+              title="Export Progress"
+            >
+              <Download className="w-5 h-5" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
@@ -226,6 +274,23 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
         </div>
       </div>
 
+      {/* Learning Heatmap */}
+      <div 
+        className={`p-6 rounded-xl border-2 mb-6 ${
+          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}
+      >
+        <h2 
+          className={`text-xl font-bold mb-4 flex items-center gap-2 ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          <Calendar size={20} className="text-green-500" aria-hidden="true" />
+          Learning Activity (Last 365 Days)
+        </h2>
+        <LearningHeatmap timeData={dailyTimeData} />
+      </div>
+
       <div 
         className={`p-6 rounded-xl border-2 ${
           darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900 border-blue-700' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'
@@ -255,6 +320,22 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <ExportModal 
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        progressData={analytics.progressData || {}}
+        timeData={lessonTimeSpent}
+      />
+      
+      <FocusMode 
+        isOpen={showFocusMode}
+        onClose={() => setShowFocusMode(false)}
+        currentLesson={null}
+        timer={0}
+        timeData={lessonTimeSpent}
+      />
     </>
   );
 };

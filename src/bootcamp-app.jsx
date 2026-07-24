@@ -17,7 +17,7 @@ import SearchFilterBar from "./components/SearchFilterBar";
 const BootcampApp = () => {
   const [currentDay, setCurrentDay] = useState(1);
   const [completedLessons, setCompletedLessons] = useState([]);
-  const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false });
+  const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false, 3: false });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -354,7 +354,7 @@ const BootcampApp = () => {
     const longestLesson = sortedByTime[0];
     const fastestLesson = sortedByTime.length > 1 ? sortedByTime[sortedByTime.length - 1] : null;
 
-    const weeklyProgress = [1, 2].map(week => {
+    const weeklyProgress = [1, 2, 3].map(week => {
       const weekLessons = curriculum.filter(l => l.week === week);
       const completedWeekLessons = weekLessons.filter(l => completedLessons.includes(l.day));
       return {

@@ -331,7 +331,7 @@ export const curriculum = [
   },
   {
     day: 6,
-    week: 1,
+    week: 2,
     title: "Advanced API Routing & Affiliate Systems",
     focus: "Build sophisticated routing logic for affiliate tracking and commission systems",
     status: "integration",
@@ -385,7 +385,7 @@ export const curriculum = [
   },
   {
     day: 7,
-    week: 1,
+    week: 2,
     title: "No-Code SaaS Building & Multi-User Logic",
     focus: "Create multi-tenant SaaS applications without traditional coding",
     status: "saas",
@@ -548,7 +548,7 @@ export const curriculum = [
   },
   {
     day: 10,
-    week: 2,
+    week: 3,
     title: "Proof of Competence (Frontend & Portfolio)",
     focus: "Build portfolio presentation and demonstrate mastery",
     status: "capstone",
@@ -602,7 +602,7 @@ export const curriculum = [
   },
   {
     day: 11,
-    week: 2,
+    week: 3,
     title: "Automation Governance & Documentation",
     focus: "Create durable operational playbooks for your automations",
     status: "general",
@@ -655,7 +655,7 @@ export const curriculum = [
   },
   {
     day: 12,
-    week: 2,
+    week: 3,
     title: "AI Operations & Monitoring",
     focus: "Keep your automations reliable with monitoring and alerting",
     status: "general",
@@ -708,7 +708,7 @@ export const curriculum = [
   },
   {
     day: 13,
-    week: 2,
+    week: 3,
     title: "Client Delivery & Stakeholder Communication",
     focus: "Learn how to present automations to stakeholders and clients",
     status: "general",
@@ -761,7 +761,7 @@ export const curriculum = [
   },
   {
     day: 14,
-    week: 2,
+    week: 3,
     title: "Capstone Review & Launch",
     focus: "Bring your solution to completion and prepare for real-world deployment",
     status: "capstone",

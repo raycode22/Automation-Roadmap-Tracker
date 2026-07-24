@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { BookOpen, Keyboard } from "lucide-react";
-import bootcampData from "./bootcampData.js";
+import bootcampData from "./data";
 import Sidebar from "./components/Sidebar";
 import ErrorBoundary from "./components/errors/ErrorBoundary";
 import Dashboard from "./components/dashboard/Dashboard";
@@ -33,7 +33,129 @@ const BootcampApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortOption, setSortOption] = useState('default');
-  
+
+  const curriculum = bootcampData.lessons;
+
+  const addToast = useCallback((toast) => {
+    const id = Date.now();
+    const newToast = {
+      id,
+      type: toast.type || 'info',
+      title: toast.title,
+      message: toast.message,
+      duration: toast.duration || 5000,
+      action: toast.action,
+    };
+    setToasts(prev => [...prev, newToast]);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const startLesson = useCallback((day) => {
+    const startTime = Date.now();
+    setLessonStatus(prev => ({
+      ...prev,
+      [day]: { status: 'in_progress', startTime }
+    }));
+    setCurrentDay(day);
+    setActiveTab("lessons");
+  }, []);
+
+  const toggleCompletion = useCallback((day) => {
+    const isCurrentlyCompleted = completedLessons.includes(day);
+
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    const checklistItems = dayChecklist?.items || [];
+    const dayChecklistState = checklistState[day] || {};
+    const allChecklistsComplete = checklistItems.length === 0 ||
+      checklistItems.every((_, idx) => dayChecklistState[idx]);
+
+    if (!isCurrentlyCompleted) {
+      if (!allChecklistsComplete) {
+        addToast({
+          type: 'warning',
+          title: 'Checklist Incomplete',
+          message: 'Please complete all checklist items before marking the lesson as complete.',
+          duration: 4000,
+        });
+        return;
+      }
+
+      let timeSpent = 0;
+      try {
+        const timerData = localStorage.getItem(`timer_${day}`);
+        if (timerData) {
+          const { time } = JSON.parse(timerData);
+          timeSpent = time;
+          localStorage.removeItem(`timer_${day}`);
+        }
+      } catch (error) {
+        console.error('Error reading timer data:', error);
+        const endTime = Date.now();
+        const startTime = lessonStatus[day]?.startTime || endTime;
+        timeSpent = Math.round((endTime - startTime) / 1000);
+      }
+
+      setLessonTimeSpent(prev => ({
+        ...prev,
+        [day]: (prev[day] || 0) + timeSpent
+      }));
+
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: { status: 'completed' }
+      }));
+
+      setCompletedLessons(prev => [...prev, day]);
+    } else {
+      setCompletedLessons(prev => prev.filter(d => d !== day));
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: { status: 'not_started' }
+      }));
+      try {
+        localStorage.removeItem(`timer_${day}`);
+      } catch (error) {
+        console.error('Error removing timer data:', error);
+      }
+    }
+  }, [completedLessons, lessonStatus, checklistState, addToast]);
+
+  const toggleChecklistItem = useCallback((day, itemIndex) => {
+    setChecklistState(prev => {
+      const dayState = prev[day] || {};
+      return {
+        ...prev,
+        [day]: {
+          ...dayState,
+          [itemIndex]: !dayState[itemIndex]
+        }
+      };
+    });
+  }, []);
+
+  const areAllChecklistsComplete = useCallback((day) => {
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    if (!dayChecklist || !dayChecklist.items || dayChecklist.items.length === 0) return true;
+
+    const dayChecklistState = checklistState[day] || {};
+    return dayChecklist.items.every((_, idx) => dayChecklistState[idx]);
+  }, [checklistState]);
+
+  const handleStartOrComplete = useCallback((day) => {
+    const statusData = lessonStatus[day];
+    const status = statusData?.status;
+    if (!status || status === 'not_started') {
+      startLesson(day);
+    } else if (status === 'in_progress') {
+      toggleCompletion(day);
+    }
+  }, [lessonStatus, startLesson, toggleCompletion]);
+
+  const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);
+
   // Load preferences from localStorage
   useEffect(() => {
     const savedSearch = localStorage.getItem('bootcampSearch');
@@ -61,26 +183,6 @@ const BootcampApp = () => {
     localStorage.setItem('bootcampFilter', filterStatus);
     localStorage.setItem('bootcampSort', sortOption);
   }, [searchTerm, filterStatus, sortOption]);
-
-  const curriculum = bootcampData.lessons;
-
-  // Toast notification system
-  const addToast = useCallback((toast) => {
-    const id = Date.now();
-    const newToast = {
-      id,
-      type: toast.type || 'info',
-      title: toast.title,
-      message: toast.message,
-      duration: toast.duration || 5000,
-      action: toast.action,
-    };
-    setToasts(prev => [...prev, newToast]);
-  }, []);
-
-  const dismissToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
 
   // Keyboard shortcuts handler
   useEffect(() => {
@@ -240,113 +342,6 @@ const BootcampApp = () => {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(sidebarCollapsed));
   }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus, checklistState, sidebarCollapsed]);
 
-  // Handle starting a lesson
-  const startLesson = useCallback((day) => {
-    const startTime = Date.now();
-    setLessonStatus(prev => ({
-      ...prev,
-      [day]: { status: 'in_progress', startTime }
-    }));
-    setCurrentDay(day);
-    setActiveTab("lessons");
-  }, []);
-
-  // Handle completing a lesson with time tracking and checklist validation
-  const toggleCompletion = useCallback((day) => {
-    const isCurrentlyCompleted = completedLessons.includes(day);
-
-    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
-    const checklistItems = dayChecklist?.items || [];
-    const dayChecklistState = checklistState[day] || {};
-    const allChecklistsComplete = checklistItems.length === 0 ||
-      checklistItems.every((_, idx) => dayChecklistState[idx]);
-
-    if (!isCurrentlyCompleted) {
-      if (!allChecklistsComplete) {
-        addToast({
-          type: 'warning',
-          title: 'Checklist Incomplete',
-          message: 'Please complete all checklist items before marking the lesson as complete.',
-          duration: 4000,
-        });
-        return;
-      }
-
-      // Get time from live timer storage first, fallback to startTime calculation
-      let timeSpent = 0;
-      try {
-        const timerData = localStorage.getItem(`timer_${day}`);
-        if (timerData) {
-          const { time } = JSON.parse(timerData);
-          timeSpent = time;
-          // Clean up timer storage after using it
-          localStorage.removeItem(`timer_${day}`);
-        }
-      } catch (error) {
-        console.error('Error reading timer data:', error);
-        // Fallback to old method
-        const endTime = Date.now();
-        const startTime = lessonStatus[day]?.startTime || endTime;
-        timeSpent = Math.round((endTime - startTime) / 1000);
-      }
-
-      setLessonTimeSpent(prev => ({
-        ...prev,
-        [day]: (prev[day] || 0) + timeSpent
-      }));
-
-      setLessonStatus(prev => ({
-        ...prev,
-        [day]: { status: 'completed' }
-      }));
-
-      setCompletedLessons(prev => [...prev, day]);
-    } else {
-      setCompletedLessons(prev => prev.filter(d => d !== day));
-      setLessonStatus(prev => ({
-        ...prev,
-        [day]: { status: 'not_started' }
-      }));
-      // Also remove any stored timer data
-      try {
-        localStorage.removeItem(`timer_${day}`);
-      } catch (error) {
-        console.error('Error removing timer data:', error);
-      }
-    }
-  }, [completedLessons, lessonStatus, checklistState]);
-
-  const toggleChecklistItem = useCallback((day, itemIndex) => {
-    setChecklistState(prev => {
-      const dayState = prev[day] || {};
-      return {
-        ...prev,
-        [day]: {
-          ...dayState,
-          [itemIndex]: !dayState[itemIndex]
-        }
-      };
-    });
-  }, []);
-
-  const areAllChecklistsComplete = useCallback((day) => {
-    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
-    if (!dayChecklist || !dayChecklist.items || dayChecklist.items.length === 0) return true;
-
-    const dayChecklistState = checklistState[day] || {};
-    return dayChecklist.items.every((_, idx) => dayChecklistState[idx]);
-  }, [checklistState]);
-
-  const handleStartOrComplete = useCallback((day) => {
-    const statusData = lessonStatus[day];
-    const status = statusData?.status;
-    if (!status || status === 'not_started') {
-      startLesson(day);
-    } else if (status === 'in_progress') {
-      toggleCompletion(day);
-    }
-  }, [lessonStatus, startLesson, toggleCompletion]);
-
   // Analytics calculations
   const analytics = useMemo(() => {
     const timeData = Object.entries(lessonTimeSpent).map(([day, seconds]) => ({
@@ -393,8 +388,6 @@ const BootcampApp = () => {
   }, []);
 
   const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
-
-  const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);
 
   const progressPercent = useMemo(() =>
     Math.round((completedLessons.length / curriculum.length) * 100),

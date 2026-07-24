@@ -37,545 +37,10 @@ import {
   Cell,
 } from "recharts";
 import bootcampData from "./bootcampData.js";
-import Sidebar from "./src/components/Sidebar";
+import Sidebar from "./components/Sidebar";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-const BootcampApp = () => {
-  const [currentDay, setCurrentDay] = useState(1);
-  const [completedLessons, setCompletedLessons] = useState([]);
-  const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false });
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [lessonTimeSpent, setLessonTimeSpent] = useState({});
-  const [lessonStatus, setLessonStatus] = useState({}); // 'not_started', 'in_progress', 'completed'
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [checklistState, setChecklistState] = useState({}); // Track checklist item completion per day
-
-  const curriculum = bootcampData.lessons;
-
-  // Load progress and theme from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("bootcampProgress");
-    if (saved) setCompletedLessons(JSON.parse(saved));
-
-    const savedTime = localStorage.getItem("lessonTimeSpent");
-    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
-
-    const savedStatus = localStorage.getItem("lessonStatus");
-    if (savedStatus) setLessonStatus(JSON.parse(savedStatus));
-
-    const savedChecklists = localStorage.getItem("checklistState");
-    if (savedChecklists) setChecklistState(JSON.parse(savedChecklists));
-
-    const savedTheme = localStorage.getItem("bootcampTheme");
-    if (savedTheme !== null) {
-      setDarkMode(JSON.parse(savedTheme));
-    } else {
-      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setDarkMode(systemDarkMode);
-    }
-
-    const savedSidebarCollapsed = localStorage.getItem("sidebarCollapsed");
-    if (savedSidebarCollapsed !== null) {
-      setSidebarCollapsed(JSON.parse(savedSidebarCollapsed));
-    }
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleThemeChange = (e) => {
-      const savedTheme = localStorage.getItem("bootcampTheme");
-      if (savedTheme === null) {
-        setDarkMode(e.matches);
-      }
-    };
-    mediaQuery.addEventListener("change", handleThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleThemeChange);
-  }, []);
-
-  // Save progress and theme to localStorage
-  useEffect(() => {
-    localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
-    localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
-    localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
-    localStorage.setItem("lessonStatus", JSON.stringify(lessonStatus));
-    localStorage.setItem("checklistState", JSON.stringify(checklistState));
-    localStorage.setItem("sidebarCollapsed", JSON.stringify(sidebarCollapsed));
-  }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus, checklistState, sidebarCollapsed]);
-
-  // Handle starting a lesson
-  const startLesson = useCallback((day) => {
-    setLessonStatus(prev => ({
-      ...prev,
-      [day]: 'in_progress'
-    }));
-    setCurrentDay(day);
-    setActiveTab("lessons");
-  }, []);
-
-  // Handle completing a lesson with time tracking and checklist validation
-  const toggleCompletion = useCallback((day) => {
-    const isCurrentlyCompleted = completedLessons.includes(day);
-    
-    // Check if all checklists for this day are completed
-    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
-    const checklistItems = dayChecklist?.items || [];
-    const dayChecklistState = checklistState[day] || {};
-    const allChecklistsComplete = checklistItems.length === 0 || 
-      checklistItems.every((_, idx) => dayChecklistState[idx]);
-    
-    if (!isCurrentlyCompleted) {
-      if (!allChecklistsComplete) {
-        alert('Please complete all checklist items before marking the lesson as complete.');
-        return;
-      }
-      
-      // Mark as complete and record time
-      const endTime = Date.now();
-      const startTime = lessonStatus[day]?.startTime || endTime;
-      const timeSpent = Math.round((endTime - startTime) / 1000);
-      
-      setLessonTimeSpent(prev => ({
-        ...prev,
-        [day]: (prev[day] || 0) + timeSpent
-      }));
-      
-      setLessonStatus(prev => ({
-        ...prev,
-        [day]: 'completed'
-      }));
-      
-      setCompletedLessons(prev => [...prev, day]);
-    } else {
-      // Mark as incomplete
-      setCompletedLessons(prev => prev.filter(d => d !== day));
-      setLessonStatus(prev => ({
-        ...prev,
-        [day]: 'not_started'
-      }));
-    }
-  }, [completedLessons, lessonStatus, checklistState]);
-
-  // Toggle checklist item completion
-  const toggleChecklistItem = useCallback((day, itemIndex) => {
-    setChecklistState(prev => {
-      const dayState = prev[day] || {};
-      return {
-        ...prev,
-        [day]: {
-          ...dayState,
-          [itemIndex]: !dayState[itemIndex]
-        }
-      };
-    });
-  }, []);
-
-  // Check if all checklists for a day are complete
-  const areAllChecklistsComplete = useCallback((day) => {
-    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
-    if (!dayChecklist || !dayChecklist.items || dayChecklist.items.length === 0) return true;
-    
-    const dayChecklistState = checklistState[day] || {};
-    return dayChecklist.items.every((_, idx) => dayChecklistState[idx]);
-  }, [checklistState]);
-
-  const handleStartOrComplete = useCallback((day) => {
-    const status = lessonStatus[day];
-    if (!status || status === 'not_started') {
-      startLesson(day);
-    } else if (status === 'in_progress') {
-      toggleCompletion(day);
-    }
-  }, [lessonStatus, startLesson, toggleCompletion]);
-
-  // Analytics calculations
-  const analytics = useMemo(() => {
-    const timeData = Object.entries(lessonTimeSpent).map(([day, seconds]) => ({
-      day: parseInt(day),
-      timeSpent: seconds,
-      title: curriculum.find(l => l.day === parseInt(day))?.title || `Day ${day}`
-    }));
-
-    const sortedByTime = [...timeData].sort((a, b) => b.timeSpent - a.timeSpent);
-    const longestLesson = sortedByTime[0];
-    const fastestLesson = sortedByTime.length > 1 ? sortedByTime[sortedByTime.length - 1] : null;
-
-    const weeklyProgress = [1, 2].map(week => {
-      const weekLessons = curriculum.filter(l => l.week === week);
-      const completedWeekLessons = weekLessons.filter(l => completedLessons.includes(l.day));
-      return {
-        week: `Week ${week}`,
-        completed: completedWeekLessons.length,
-        total: weekLessons.length,
-        percentage: Math.round((completedWeekLessons.length / weekLessons.length) * 100)
-      };
-    });
-
-    const categoryData = (() => {
-      const categories = {};
-      curriculum.forEach(lesson => {
-        const status = lesson.status || 'general';
-        if (!categories[status]) {
-          categories[status] = { name: status, completed: 0, total: 0 };
-        }
-        categories[status].total++;
-        if (completedLessons.includes(lesson.day)) {
-          categories[status].completed++;
-        }
-      });
-      return Object.values(categories);
-    })();
-
-    return { timeData, longestLesson, fastestLesson, weeklyProgress, categoryData };
-  }, [lessonTimeSpent, completedLessons, curriculum]);
-
-  // Memoized handlers
-  const toggleWeek = useCallback((week) => {
-    setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
-  }, []);
-
-  const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
-
-  const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);
-  
-  const progressPercent = useMemo(() => 
-    Math.round((completedLessons.length / curriculum.length) * 100),
-    [completedLessons.length, curriculum.length]
-  );
-
-  // Load progress and theme from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("bootcampProgress");
-    if (saved) setCompletedLessons(JSON.parse(saved));
-
-    const savedTime = localStorage.getItem("lessonTimeSpent");
-    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
-
-    const savedTheme = localStorage.getItem("bootcampTheme");
-    if (savedTheme !== null) {
-      setDarkMode(JSON.parse(savedTheme));
-    } else {
-      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setDarkMode(systemDarkMode);
-    }
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleThemeChange = (e) => {
-      const savedTheme = localStorage.getItem("bootcampTheme");
-      if (savedTheme === null) {
-        setDarkMode(e.matches);
-      }
-    };
-    mediaQuery.addEventListener("change", handleThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleThemeChange);
-  }, []);
-
-  // Save progress and theme to localStorage
-  useEffect(() => {
-    localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
-    localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
-  }, [completedLessons, darkMode]);
-
-  // Sidebar navigation handler
-  const handleNavigate = useCallback((tab) => {
-    setActiveTab(tab);
-    setSidebarOpen(false);
-  }, []);
-
-  // Handle day selection
-  const handleSelectDay = useCallback((day) => {
-    setCurrentDay(day);
-    setActiveTab("lessons");
-    setSidebarOpen(false);
-  }, []);
-
-  // Handle reset - clear all progress and return to zero
-  const handleReset = useCallback(() => {
-    if (window.confirm("Are you sure you want to reset all progress? This will clear all completed lessons, time tracking, and lesson status.")) {
-      setCompletedLessons([]);
-      setLessonTimeSpent({});
-      setLessonStatus({});
-      setCurrentDay(1);
-      setActiveTab("dashboard");
-      setExpandedWeeks({ 1: true, 2: false });
-    }
-  }, []);
-
-  return (
-    <div className={`min-h-screen flex flex-col md:flex-row ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      <Sidebar
-        currentDay={currentDay}
-        completedLessons={completedLessons}
-        expandedWeeks={expandedWeeks}
-        activeTab={activeTab}
-        darkMode={darkMode}
-        sidebarOpen={sidebarOpen}
-        sidebarCollapsed={sidebarCollapsed}
-        curriculum={curriculum}
-        progressPercent={progressPercent}
-        lessonStatus={lessonStatus}
-        onToggleWeek={toggleWeek}
-        onSelectDay={handleSelectDay}
-        onNavigate={handleNavigate}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onReset={handleReset}
-        onStartLesson={startLesson}
-        onCompleteLesson={toggleCompletion}
-        goToDashboard={() => setActiveTab("dashboard")}
-      />
-
-      {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto w-full ${darkMode ? "bg-gray-900" : "bg-white"}`}>
-        <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-12">
-          {activeTab === "dashboard" && (
-            <Dashboard
-              analytics={analytics}
-              completedLessons={completedLessons}
-              curriculum={curriculum}
-              progressPercent={progressPercent}
-              lessonTimeSpent={lessonTimeSpent}
-              darkMode={darkMode}
-            />
-          )}
-
-          {activeTab === "lessons" && !lesson && (
-            <EmptyState
-              darkMode={darkMode}
-              icon={BookOpen}
-              title="Select a Lesson to Begin"
-              description="Choose a lesson from the sidebar to start learning"
-            />
-          )}
-
-          {activeTab === "lessons" && lesson && (
-            <LessonView
-              lesson={lesson}
-              currentDay={currentDay}
-              isCompleted={isCompleted}
-              toggleCompletion={toggleCompletion}
-              darkMode={darkMode}
-              checklistState={checklistState}
-              toggleChecklistItem={toggleChecklistItem}
-              areAllChecklistsComplete={areAllChecklistsComplete}
-            />
-          )}
-
-          {activeTab === "resources" && (
-            <ResourcesView resources={bootcampData.resources} darkMode={darkMode} />
-          )}
-
-          {activeTab === "reference" && (
-            <ReferenceView reference={bootcampData.quickReference} darkMode={darkMode} />
-          )}
-
-          {activeTab === "checklists" && (
-            <ChecklistsView checklists={bootcampData.checklists} darkMode={darkMode} />
-          )}
-
-          {activeTab === "instructor" && (
-            <InstructorView instructor={bootcampData.instructor} darkMode={darkMode} />
-          )}
-        </div>
-      </main>
-    </div>
-  );
-};
-
-// Dashboard Component
-const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, lessonTimeSpent, darkMode }) => (
-  <>
-    <div className="mb-8">
-      <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
-        Learning Dashboard
-      </h1>
-      <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-        Track your progress to become a Technical Automation Architect
-      </p>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-      <StatCard
-        icon={Trophy}
-        label="Completed"
-        value={`${completedLessons.length}/${curriculum.length}`}
-        subtext="lessons done"
-        colorClass={darkMode ? "bg-blue-900 bg-opacity-20 border-blue-700" : "bg-blue-50 border-blue-200"}
-        iconColor="text-yellow-500"
-        darkMode={darkMode}
-      />
-      <StatCard
-        icon={TrendingUp}
-        label="Progress"
-        value={`${progressPercent}%`}
-        subtext="overall completion"
-        colorClass={darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}
-        iconColor="text-green-500"
-        darkMode={darkMode}
-      />
-      <StatCard
-        icon={Clock}
-        label="Time Spent"
-        value={`${Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0) / 60)}m`}
-        subtext="total learning time"
-        colorClass={darkMode ? "bg-purple-900 bg-opacity-20 border-purple-700" : "bg-purple-50 border-purple-200"}
-        iconColor="text-purple-500"
-        darkMode={darkMode}
-      />
-      <StatCard
-        icon={Award}
-        label="Streak"
-        value={completedLessons.length}
-        subtext="days active"
-        colorClass={darkMode ? "bg-orange-900 bg-opacity-20 border-orange-700" : "bg-orange-50 border-orange-200"}
-        iconColor="text-orange-500"
-        darkMode={darkMode}
-      />
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <ChartCard
-        title="Time Spent Per Lesson"
-        icon={Clock}
-        iconColor="text-blue-500"
-        darkMode={darkMode}
-      >
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={analytics.timeData.length > 0 ? analytics.timeData : [{day: 0, timeSpent: 0, title: 'No data yet'}]}>
-            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
-            <XAxis 
-              dataKey="day" 
-              tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-              label={{ value: 'Day', position: 'insideBottom', offset: -5, fill: darkMode ? "#9ca3af" : "#6b7280" }}
-            />
-            <YAxis 
-              tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-              label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: darkMode ? "#9ca3af" : "#6b7280" }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: darkMode ? "#1f2937" : "#fff", 
-                border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
-                borderRadius: '8px'
-              }}
-              labelStyle={{ color: darkMode ? "#fff" : "#111" }}
-              formatter={(value) => [`${Math.round(value)}s`, 'Time']}
-            />
-            <Bar dataKey="timeSpent" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-      <ChartCard
-        title="Progress by Topic"
-        icon={Target}
-        iconColor="text-green-500"
-        darkMode={darkMode}
-      >
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={analytics.categoryData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="completed"
-            >
-              {analytics.categoryData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % 5]} />
-              ))}
-            </Pie>
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: darkMode ? "#1f2937" : "#fff", 
-                border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
-                borderRadius: '8px'
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </ChartCard>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {analytics.longestLesson && (
-        <RecordCard
-          title="Most Challenging Lesson"
-          icon={Clock}
-          value={`Day ${analytics.longestLesson.day}: ${analytics.longestLesson.title}`}
-          metric={`${Math.round(analytics.longestLesson.timeSpent / 60)} minutes`}
-          message="This lesson took the longest time - consider reviewing the concepts again!"
-          colorClass={darkMode ? "bg-red-900 bg-opacity-20 border-red-700" : "bg-red-50 border-red-200"}
-          textColor={darkMode ? "text-red-300" : "text-red-700"}
-          metricColor={darkMode ? "text-red-400" : "text-red-600"}
-          darkMode={darkMode}
-        />
-      )}
-
-      {analytics.fastestLesson && (
-        <RecordCard
-          title="Quickest Lesson"
-          icon={Zap}
-          value={`Day ${analytics.fastestLesson.day}: ${analytics.fastestLesson.title}`}
-          metric={`${analytics.fastestLesson.timeSpent} seconds`}
-          message="You mastered this one quickly! Great job understanding these concepts."
-          colorClass={darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}
-          textColor={darkMode ? "text-green-300" : "text-green-700"}
-          metricColor={darkMode ? "text-green-400" : "text-green-600"}
-          darkMode={darkMode}
-        />
-      )}
-    </div>
-
-    <div className={`p-6 rounded-xl border-2 mb-6 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
-      <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
-        <Calendar size={20} className="text-orange-500" />
-        Weekly Progress
-      </h2>
-      <div className="space-y-4">
-        {analytics.weeklyProgress.map((week) => (
-          <div key={week.week}>
-            <div className="flex justify-between mb-2">
-              <span className={`font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{week.week}</span>
-              <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                {week.completed}/{week.total} lessons ({week.percentage}%)
-              </span>
-            </div>
-            <div className={`w-full h-4 rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>
-              <div 
-                className="h-4 rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
-                style={{ width: `${week.percentage}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-gradient-to-r from-blue-900 to-purple-900 border-blue-700" : "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200"}`}>
-      <h2 className={`text-xl font-bold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
-        🎯 Your Path to Becoming Job-Ready
-      </h2>
-      <p className={`mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-        You're building skills in API integration, automation workflows, AI-powered systems, and business problem-solving. 
-        Keep going - each lesson brings you closer to becoming a Technical Automation Architect ready for 2026!
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {['APIs & Webhooks', 'JSON Data', 'Automation Tools', 'AI Integration', 'Business Systems'].map((skill) => (
-          <span key={skill} className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-blue-800 text-blue-200" : "bg-blue-200 text-blue-800"}`}>
-            {skill}
-          </span>
-        ))}
-      </div>
-    </div>
-  </>
-);
-
-// Reusable Components
 const StatCard = ({ icon: Icon, label, value, subtext, colorClass, iconColor, darkMode }) => (
   <div className={`p-6 rounded-xl border-2 ${colorClass}`}>
     <div className="flex items-center gap-3 mb-3">
@@ -1311,6 +776,540 @@ const InstructorView = ({ instructor, darkMode }) => (
         I bring expert-level knowledge across multiple disciplines: creating SEO-optimized content systems, producing compelling video and graphics, building high-converting sales funnels, conducting competitive research, and automating complex workflows. My toolkit includes the latest AI platforms (ChatGPT, Claude, Gemini), design tools (Canva, CapCut), no-code platforms (Zapier, Make, n8n), and analytics solutions to deliver measurable results.
       </p>
     </section>
+  </>
+);
+
+const BootcampApp = () => {
+  const [currentDay, setCurrentDay] = useState(1);
+  const [completedLessons, setCompletedLessons] = useState([]);
+  const [expandedWeeks, setExpandedWeeks] = useState({ 1: true, 2: false });
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [lessonTimeSpent, setLessonTimeSpent] = useState({});
+  const [lessonStatus, setLessonStatus] = useState({}); // 'not_started', 'in_progress', 'completed'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [checklistState, setChecklistState] = useState({}); // Track checklist item completion per day
+
+  const curriculum = bootcampData.lessons;
+
+  // Load progress and theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("bootcampProgress");
+    if (saved) setCompletedLessons(JSON.parse(saved));
+
+    const savedTime = localStorage.getItem("lessonTimeSpent");
+    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
+
+    const savedStatus = localStorage.getItem("lessonStatus");
+    if (savedStatus) setLessonStatus(JSON.parse(savedStatus));
+
+    const savedChecklists = localStorage.getItem("checklistState");
+    if (savedChecklists) setChecklistState(JSON.parse(savedChecklists));
+
+    const savedTheme = localStorage.getItem("bootcampTheme");
+    if (savedTheme !== null) {
+      setDarkMode(JSON.parse(savedTheme));
+    } else {
+      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDarkMode(systemDarkMode);
+    }
+
+    const savedSidebarCollapsed = localStorage.getItem("sidebarCollapsed");
+    if (savedSidebarCollapsed !== null) {
+      setSidebarCollapsed(JSON.parse(savedSidebarCollapsed));
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleThemeChange = (e) => {
+      const savedTheme = localStorage.getItem("bootcampTheme");
+      if (savedTheme === null) {
+        setDarkMode(e.matches);
+      }
+    };
+    mediaQuery.addEventListener("change", handleThemeChange);
+    return () => mediaQuery.removeEventListener("change", handleThemeChange);
+  }, []);
+
+  // Save progress and theme to localStorage
+  useEffect(() => {
+    localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
+    localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
+    localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
+    localStorage.setItem("lessonStatus", JSON.stringify(lessonStatus));
+    localStorage.setItem("checklistState", JSON.stringify(checklistState));
+    localStorage.setItem("sidebarCollapsed", JSON.stringify(sidebarCollapsed));
+  }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus, checklistState, sidebarCollapsed]);
+
+  // Handle starting a lesson
+  const startLesson = useCallback((day) => {
+    setLessonStatus(prev => ({
+      ...prev,
+      [day]: 'in_progress'
+    }));
+    setCurrentDay(day);
+    setActiveTab("lessons");
+  }, []);
+
+  // Handle completing a lesson with time tracking and checklist validation
+  const toggleCompletion = useCallback((day) => {
+    const isCurrentlyCompleted = completedLessons.includes(day);
+    
+    // Check if all checklists for this day are completed
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    const checklistItems = dayChecklist?.items || [];
+    const dayChecklistState = checklistState[day] || {};
+    const allChecklistsComplete = checklistItems.length === 0 || 
+      checklistItems.every((_, idx) => dayChecklistState[idx]);
+    
+    if (!isCurrentlyCompleted) {
+      if (!allChecklistsComplete) {
+        alert('Please complete all checklist items before marking the lesson as complete.');
+        return;
+      }
+      
+      // Mark as complete and record time
+      const endTime = Date.now();
+      const startTime = lessonStatus[day]?.startTime || endTime;
+      const timeSpent = Math.round((endTime - startTime) / 1000);
+      
+      setLessonTimeSpent(prev => ({
+        ...prev,
+        [day]: (prev[day] || 0) + timeSpent
+      }));
+      
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: 'completed'
+      }));
+      
+      setCompletedLessons(prev => [...prev, day]);
+    } else {
+      // Mark as incomplete
+      setCompletedLessons(prev => prev.filter(d => d !== day));
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: 'not_started'
+      }));
+    }
+  }, [completedLessons, lessonStatus, checklistState]);
+
+  // Toggle checklist item completion
+  const toggleChecklistItem = useCallback((day, itemIndex) => {
+    setChecklistState(prev => {
+      const dayState = prev[day] || {};
+      return {
+        ...prev,
+        [day]: {
+          ...dayState,
+          [itemIndex]: !dayState[itemIndex]
+        }
+      };
+    });
+  }, []);
+
+  // Check if all checklists for a day are complete
+  const areAllChecklistsComplete = useCallback((day) => {
+    const dayChecklist = bootcampData.checklists.find(c => c.day === day);
+    if (!dayChecklist || !dayChecklist.items || dayChecklist.items.length === 0) return true;
+    
+    const dayChecklistState = checklistState[day] || {};
+    return dayChecklist.items.every((_, idx) => dayChecklistState[idx]);
+  }, [checklistState]);
+
+  const handleStartOrComplete = useCallback((day) => {
+    const status = lessonStatus[day];
+    if (!status || status === 'not_started') {
+      startLesson(day);
+    } else if (status === 'in_progress') {
+      toggleCompletion(day);
+    }
+  }, [lessonStatus, startLesson, toggleCompletion]);
+
+  // Analytics calculations
+  const analytics = useMemo(() => {
+    const timeData = Object.entries(lessonTimeSpent).map(([day, seconds]) => ({
+      day: parseInt(day),
+      timeSpent: seconds,
+      title: curriculum.find(l => l.day === parseInt(day))?.title || `Day ${day}`
+    }));
+
+    const sortedByTime = [...timeData].sort((a, b) => b.timeSpent - a.timeSpent);
+    const longestLesson = sortedByTime[0];
+    const fastestLesson = sortedByTime.length > 1 ? sortedByTime[sortedByTime.length - 1] : null;
+
+    const weeklyProgress = [1, 2].map(week => {
+      const weekLessons = curriculum.filter(l => l.week === week);
+      const completedWeekLessons = weekLessons.filter(l => completedLessons.includes(l.day));
+      return {
+        week: `Week ${week}`,
+        completed: completedWeekLessons.length,
+        total: weekLessons.length,
+        percentage: Math.round((completedWeekLessons.length / weekLessons.length) * 100)
+      };
+    });
+
+    const categoryData = (() => {
+      const categories = {};
+      curriculum.forEach(lesson => {
+        const status = lesson.status || 'general';
+        if (!categories[status]) {
+          categories[status] = { name: status, completed: 0, total: 0 };
+        }
+        categories[status].total++;
+        if (completedLessons.includes(lesson.day)) {
+          categories[status].completed++;
+        }
+      });
+      return Object.values(categories);
+    })();
+
+    return { timeData, longestLesson, fastestLesson, weeklyProgress, categoryData };
+  }, [lessonTimeSpent, completedLessons, curriculum]);
+
+  // Memoized handlers
+  const toggleWeek = useCallback((week) => {
+    setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
+  }, []);
+
+  const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
+
+  const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);
+  
+  const progressPercent = useMemo(() => 
+    Math.round((completedLessons.length / curriculum.length) * 100),
+    [completedLessons.length, curriculum.length]
+  );
+
+  // Load progress and theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("bootcampProgress");
+    if (saved) setCompletedLessons(JSON.parse(saved));
+
+    const savedTime = localStorage.getItem("lessonTimeSpent");
+    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
+
+    const savedTheme = localStorage.getItem("bootcampTheme");
+    if (savedTheme !== null) {
+      setDarkMode(JSON.parse(savedTheme));
+    } else {
+      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDarkMode(systemDarkMode);
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleThemeChange = (e) => {
+      const savedTheme = localStorage.getItem("bootcampTheme");
+      if (savedTheme === null) {
+        setDarkMode(e.matches);
+      }
+    };
+    mediaQuery.addEventListener("change", handleThemeChange);
+    return () => mediaQuery.removeEventListener("change", handleThemeChange);
+  }, []);
+
+  // Save progress and theme to localStorage
+  useEffect(() => {
+    localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
+    localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
+  }, [completedLessons, darkMode]);
+
+  // Sidebar navigation handler
+  const handleNavigate = useCallback((tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  }, []);
+
+  // Handle day selection
+  const handleSelectDay = useCallback((day) => {
+    setCurrentDay(day);
+    setActiveTab("lessons");
+    setSidebarOpen(false);
+  }, []);
+
+  // Handle reset - clear all progress and return to zero
+  const handleReset = useCallback(() => {
+    if (window.confirm("Are you sure you want to reset all progress? This will clear all completed lessons, time tracking, and lesson status.")) {
+      setCompletedLessons([]);
+      setLessonTimeSpent({});
+      setLessonStatus({});
+      setCurrentDay(1);
+      setActiveTab("dashboard");
+      setExpandedWeeks({ 1: true, 2: false });
+    }
+  }, []);
+
+  return (
+    <div className={`min-h-screen flex flex-col md:flex-row ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+      <Sidebar
+        currentDay={currentDay}
+        completedLessons={completedLessons}
+        expandedWeeks={expandedWeeks}
+        activeTab={activeTab}
+        darkMode={darkMode}
+        sidebarOpen={sidebarOpen}
+        sidebarCollapsed={sidebarCollapsed}
+        curriculum={curriculum}
+        progressPercent={progressPercent}
+        lessonStatus={lessonStatus}
+        onToggleWeek={toggleWeek}
+        onSelectDay={handleSelectDay}
+        onNavigate={handleNavigate}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleDarkMode={() => setDarkMode(!darkMode)}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onReset={handleReset}
+        onStartLesson={startLesson}
+        onCompleteLesson={toggleCompletion}
+        goToDashboard={() => setActiveTab("dashboard")}
+      />
+
+      {/* Main Content */}
+      <main className={`flex-1 overflow-y-auto w-full ${darkMode ? "bg-gray-900" : "bg-white"}`}>
+        <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-12">
+          {activeTab === "dashboard" && (
+            <Dashboard
+              analytics={analytics}
+              completedLessons={completedLessons}
+              curriculum={curriculum}
+              progressPercent={progressPercent}
+              lessonTimeSpent={lessonTimeSpent}
+              darkMode={darkMode}
+            />
+          )}
+
+          {activeTab === "lessons" && !lesson && (
+            <EmptyState
+              darkMode={darkMode}
+              icon={BookOpen}
+              title="Select a Lesson to Begin"
+              description="Choose a lesson from the sidebar to start learning"
+            />
+          )}
+
+          {activeTab === "lessons" && lesson && (
+            <LessonView
+              lesson={lesson}
+              currentDay={currentDay}
+              isCompleted={isCompleted}
+              toggleCompletion={toggleCompletion}
+              darkMode={darkMode}
+              checklistState={checklistState}
+              toggleChecklistItem={toggleChecklistItem}
+              areAllChecklistsComplete={areAllChecklistsComplete}
+            />
+          )}
+
+          {activeTab === "resources" && (
+            <ResourcesView resources={bootcampData.resources} darkMode={darkMode} />
+          )}
+
+          {activeTab === "reference" && (
+            <ReferenceView reference={bootcampData.quickReference} darkMode={darkMode} />
+          )}
+
+          {activeTab === "checklists" && (
+            <ChecklistsView checklists={bootcampData.checklists} darkMode={darkMode} />
+          )}
+
+          {activeTab === "instructor" && (
+            <InstructorView instructor={bootcampData.instructor} darkMode={darkMode} />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+// Dashboard Component
+const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, lessonTimeSpent, darkMode }) => (
+  <>
+    <div className="mb-8">
+      <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+        Learning Dashboard
+      </h1>
+      <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+        Track your progress to become a Technical Automation Architect
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+      <StatCard
+        icon={Trophy}
+        label="Completed"
+        value={`${completedLessons.length}/${curriculum.length}`}
+        subtext="lessons done"
+        colorClass={darkMode ? "bg-blue-900 bg-opacity-20 border-blue-700" : "bg-blue-50 border-blue-200"}
+        iconColor="text-yellow-500"
+        darkMode={darkMode}
+      />
+      <StatCard
+        icon={TrendingUp}
+        label="Progress"
+        value={`${progressPercent}%`}
+        subtext="overall completion"
+        colorClass={darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}
+        iconColor="text-green-500"
+        darkMode={darkMode}
+      />
+      <StatCard
+        icon={Clock}
+        label="Time Spent"
+        value={`${Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0) / 60)}m`}
+        subtext="total learning time"
+        colorClass={darkMode ? "bg-purple-900 bg-opacity-20 border-purple-700" : "bg-purple-50 border-purple-200"}
+        iconColor="text-purple-500"
+        darkMode={darkMode}
+      />
+      <StatCard
+        icon={Award}
+        label="Streak"
+        value={completedLessons.length}
+        subtext="days active"
+        colorClass={darkMode ? "bg-orange-900 bg-opacity-20 border-orange-700" : "bg-orange-50 border-orange-200"}
+        iconColor="text-orange-500"
+        darkMode={darkMode}
+      />
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <ChartCard
+        title="Time Spent Per Lesson"
+        icon={Clock}
+        iconColor="text-blue-500"
+        darkMode={darkMode}
+      >
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={analytics.timeData.length > 0 ? analytics.timeData : [{day: 0, timeSpent: 0, title: 'No data yet'}]}>
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
+            <XAxis 
+              dataKey="day" 
+              tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+              label={{ value: 'Day', position: 'insideBottom', offset: -5, fill: darkMode ? "#9ca3af" : "#6b7280" }}
+            />
+            <YAxis 
+              tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+              label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: darkMode ? "#9ca3af" : "#6b7280" }}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: darkMode ? "#1f2937" : "#fff", 
+                border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
+                borderRadius: '8px'
+              }}
+              labelStyle={{ color: darkMode ? "#fff" : "#111" }}
+              formatter={(value) => [`${Math.round(value)}s`, 'Time']}
+            />
+            <Bar dataKey="timeSpent" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard
+        title="Progress by Topic"
+        icon={Target}
+        iconColor="text-green-500"
+        darkMode={darkMode}
+      >
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie
+              data={analytics.categoryData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="completed"
+            >
+              {analytics.categoryData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % 5]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: darkMode ? "#1f2937" : "#fff", 
+                border: `1px solid ${darkMode ? "#374151" : "#e5e7eb"}`,
+                borderRadius: '8px'
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      {analytics.longestLesson && (
+        <RecordCard
+          title="Most Challenging Lesson"
+          icon={Clock}
+          value={`Day ${analytics.longestLesson.day}: ${analytics.longestLesson.title}`}
+          metric={`${Math.round(analytics.longestLesson.timeSpent / 60)} minutes`}
+          message="This lesson took the longest time - consider reviewing the concepts again!"
+          colorClass={darkMode ? "bg-red-900 bg-opacity-20 border-red-700" : "bg-red-50 border-red-200"}
+          textColor={darkMode ? "text-red-300" : "text-red-700"}
+          metricColor={darkMode ? "text-red-400" : "text-red-600"}
+          darkMode={darkMode}
+        />
+      )}
+
+      {analytics.fastestLesson && (
+        <RecordCard
+          title="Quickest Lesson"
+          icon={Zap}
+          value={`Day ${analytics.fastestLesson.day}: ${analytics.fastestLesson.title}`}
+          metric={`${analytics.fastestLesson.timeSpent} seconds`}
+          message="You mastered this one quickly! Great job understanding these concepts."
+          colorClass={darkMode ? "bg-green-900 bg-opacity-20 border-green-700" : "bg-green-50 border-green-200"}
+          textColor={darkMode ? "text-green-300" : "text-green-700"}
+          metricColor={darkMode ? "text-green-400" : "text-green-600"}
+          darkMode={darkMode}
+        />
+      )}
+    </div>
+
+    <div className={`p-6 rounded-xl border-2 mb-6 ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+      <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+        <Calendar size={20} className="text-orange-500" />
+        Weekly Progress
+      </h2>
+      <div className="space-y-4">
+        {analytics.weeklyProgress.map((week) => (
+          <div key={week.week}>
+            <div className="flex justify-between mb-2">
+              <span className={`font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{week.week}</span>
+              <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                {week.completed}/{week.total} lessons ({week.percentage}%)
+              </span>
+            </div>
+            <div className={`w-full h-4 rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>
+              <div 
+                className="h-4 rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
+                style={{ width: `${week.percentage}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className={`p-6 rounded-xl border-2 ${darkMode ? "bg-gradient-to-r from-blue-900 to-purple-900 border-blue-700" : "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200"}`}>
+      <h2 className={`text-xl font-bold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+        🎯 Your Path to Becoming Job-Ready
+      </h2>
+      <p className={`mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+        You're building skills in API integration, automation workflows, AI-powered systems, and business problem-solving. 
+        Keep going - each lesson brings you closer to becoming a Technical Automation Architect ready for 2026!
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {['APIs & Webhooks', 'JSON Data', 'Automation Tools', 'AI Integration', 'Business Systems'].map((skill) => (
+          <span key={skill} className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-blue-800 text-blue-200" : "bg-blue-200 text-blue-800"}`}>
+            {skill}
+          </span>
+        ))}
+      </div>
+    </div>
   </>
 );
 

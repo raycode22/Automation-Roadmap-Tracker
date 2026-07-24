@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Keyboard } from "lucide-react";
 import bootcampData from "./bootcampData.js";
 import Sidebar from "./components/Sidebar";
 import ErrorBoundary from "./components/errors/ErrorBoundary";
@@ -10,6 +10,8 @@ import ReferenceView from "./components/resources/ReferenceView";
 import ChecklistsView from "./components/resources/ChecklistsView";
 import InstructorView from "./components/resources/InstructorView";
 import EmptyState from "./components/common/EmptyState";
+import ToastContainer from "./components/common/ToastContainer";
+import ShortcutModal from "./components/common/ShortcutModal";
 
 const BootcampApp = () => {
   const [currentDay, setCurrentDay] = useState(1);
@@ -22,8 +24,139 @@ const BootcampApp = () => {
   const [lessonStatus, setLessonStatus] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [checklistState, setChecklistState] = useState({});
+  const [toasts, setToasts] = useState([]);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [autoStartedLesson, setAutoStartedLesson] = useState(false);
 
   const curriculum = bootcampData.lessons;
+
+  // Toast notification system
+  const addToast = useCallback((toast) => {
+    const id = Date.now();
+    const newToast = {
+      id,
+      type: toast.type || 'info',
+      title: toast.title,
+      message: toast.message,
+      duration: toast.duration || 5000,
+      action: toast.action,
+    };
+    setToasts(prev => [...prev, newToast]);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // Keyboard shortcuts handler
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger shortcuts when typing in input fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Show/hide shortcuts modal with ?
+      if (e.key === '?' && !e.shiftKey) {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
+        return;
+      }
+
+      // Close shortcuts modal with Escape
+      if (e.key === 'Escape' && showShortcuts) {
+        setShowShortcuts(false);
+        return;
+      }
+
+      // Navigation shortcuts (1-6)
+      const navKeys = ['1', '2', '3', '4', '5', '6'];
+      const tabMap = {
+        '1': 'dashboard',
+        '2': 'lessons',
+        '3': 'resources',
+        '4': 'reference',
+        '5': 'checklists',
+        '6': 'instructor',
+      };
+      
+      if (navKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const targetTab = tabMap[e.key];
+        if (targetTab) {
+          setActiveTab(targetTab);
+          addToast({
+            type: 'info',
+            title: 'Navigation',
+            message: `Switched to ${targetTab.charAt(0).toUpperCase() + targetTab.slice(1)}`,
+            duration: 2000,
+          });
+        }
+        return;
+      }
+
+      // Toggle dark mode with 'd'
+      if (e.key === 'd' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setDarkMode(prev => !prev);
+        addToast({
+          type: 'info',
+          title: 'Theme',
+          message: darkMode ? 'Switched to light mode' : 'Switched to dark mode',
+          duration: 2000,
+        });
+        return;
+      }
+
+      // Toggle sidebar collapse with 's'
+      if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setSidebarCollapsed(prev => !prev);
+        return;
+      }
+
+      // Mark lesson complete with Ctrl/Cmd + Enter (only in lesson view)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeTab === 'lessons' && lesson) {
+        e.preventDefault();
+        const statusData = lessonStatus?.[currentDay];
+        const status = statusData?.status;
+        if (!status || status === 'not_started') {
+          startLesson(currentDay);
+        } else if (status === 'in_progress') {
+          toggleCompletion(currentDay);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, lesson, currentDay, lessonStatus, startLesson, toggleCompletion, darkMode, addToast, showShortcuts]);
+
+  // Auto-start timer when entering a lesson for the first time
+  useEffect(() => {
+    if (activeTab === 'lessons' && lesson && !autoStartedLesson) {
+      const statusData = lessonStatus?.[lesson.day];
+      const status = statusData?.status;
+      
+      if (!status || status === 'not_started') {
+        // Auto-start the lesson
+        startLesson(lesson.day);
+        setAutoStartedLesson(true);
+        addToast({
+          type: 'info',
+          title: 'Timer Started',
+          message: `Learning session started for Day ${lesson.day}`,
+          duration: 3000,
+        });
+      }
+    }
+    
+    // Reset auto-start flag when changing lessons
+    if (activeTab !== 'lessons' || !lesson) {
+      setAutoStartedLesson(false);
+    }
+  }, [activeTab, lesson?.day, autoStartedLesson, lessonStatus, startLesson, addToast]);
 
   // Load progress and theme from localStorage
   useEffect(() => {
@@ -96,7 +229,12 @@ const BootcampApp = () => {
 
     if (!isCurrentlyCompleted) {
       if (!allChecklistsComplete) {
-        alert('Please complete all checklist items before marking the lesson as complete.');
+        addToast({
+          type: 'warning',
+          title: 'Checklist Incomplete',
+          message: 'Please complete all checklist items before marking the lesson as complete.',
+          duration: 4000,
+        });
         return;
       }
 
@@ -330,6 +468,20 @@ const BootcampApp = () => {
             )}
           </div>
         </main>
+        
+        {/* Toast Notifications */}
+        <ToastContainer 
+          toasts={toasts} 
+          onDismiss={dismissToast} 
+          darkMode={darkMode} 
+        />
+        
+        {/* Keyboard Shortcuts Modal */}
+        <ShortcutModal 
+          isOpen={showShortcuts} 
+          onClose={() => setShowShortcuts(false)} 
+          darkMode={darkMode} 
+        />
       </div>
     </ErrorBoundary>
   );

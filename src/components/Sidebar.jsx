@@ -151,7 +151,8 @@ const Sidebar = ({
                     ? "bg-gray-700 text-yellow-400 hover:bg-gray-600"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
-                title={darkMode ? "Light mode" : "Dark mode"}
+                title={darkMode ? "Light mode (Press 'd')" : "Dark mode (Press 'd')"}
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -166,7 +167,8 @@ const Sidebar = ({
                 ? "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100"
             }`}
-            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar (Press 's')" : "Collapse sidebar (Press 's')"}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>

@@ -1,14 +1,5 @@
 ```
-# Build artifacts
-dist/
-build/
-# Dependencies
-node_modules/
-# Logs and temp files
-*.log
-*.tmp
-# Environment
-.env
-.env.local
-.env.*
+# No build artifacts, dependencies, or temporary files detected in changes
+# Only documentation file (USABILITY_AUDIT_REPORT.md) was added
+# No .gitignore rules needed
 ```

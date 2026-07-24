@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Target, Zap, BookOpen, Lightbulb, ClipboardList, ExternalLink, 
-  CheckCircle2 
+  CheckCircle2, Clock
 } from 'lucide-react';
 import bootcampData from '../../bootcampData.js';
 
@@ -243,6 +243,9 @@ const LessonView = ({
   toggleChecklistItem, 
   areAllChecklistsComplete 
 }) => {
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  
   const dayChecklist = useMemo(() => 
     bootcampData.checklists.find(c => c.day === currentDay), 
     [currentDay]
@@ -252,6 +255,32 @@ const LessonView = ({
     areAllChecklistsComplete(currentDay), 
     [areAllChecklistsComplete, currentDay]
   );
+
+  // Start timer when lesson is viewed and lesson status is in_progress
+  useEffect(() => {
+    const status = lessonStatus?.[currentDay];
+    if (status === 'in_progress' && !timerRunning) {
+      setTimerRunning(true);
+    }
+  }, [currentDay]);
+
+  // Timer interval
+  useEffect(() => {
+    let interval;
+    if (timerRunning) {
+      interval = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning]);
+
+  // Format time display
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <>
@@ -274,6 +303,15 @@ const LessonView = ({
               Completed
             </span>
           )}
+          {/* Live Timer Display */}
+          <span
+            className={`inline-flex items-center gap-1 px-3 py-1 text-xs md:text-sm font-semibold rounded ${
+              darkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-700'
+            }`}
+          >
+            <Clock size={16} aria-hidden="true" />
+            Time: {formatTime(elapsedTime)}
+          </span>
         </div>
         <h1 
           className={`text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 leading-tight ${

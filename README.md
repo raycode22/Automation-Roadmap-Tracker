@@ -99,17 +99,38 @@ Data persists across browser sessions and is scoped to the domain.
 
 ## Deployment
 
-### Docker
+### Docker Deployment
+
+**Prerequisites:** Docker and Docker Compose installed on your system.
+
+**Local Deployment:**
 
 ```bash
-docker-compose up
+# Build and start the container
+docker-compose up --build
+
+# Access the application at http://localhost:3000
 ```
 
-The application will be available at http://localhost:3000
+**Production Deployment:**
+
+```bash
+# Build the Docker image
+docker build -t bootcamp-app .
+
+# Run the container
+docker run -p 3000:80 bootcamp-app
+```
+
+The Docker configuration uses a multi-stage build to optimize image size, with nginx serving the production build.
 
 ### Manual Deployment
 
 Build the production assets and serve the `dist` directory using any static file server or hosting platform such as Vercel, Netlify, or GitHub Pages.
+
+```bash
+npm run build
+```
 
 ## Dependencies
 

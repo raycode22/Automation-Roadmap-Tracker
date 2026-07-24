@@ -678,32 +678,49 @@ const bootcampData = {
       ]
     }
   ],
-  resources: [
-    {
-      category: "Learning Platforms",
-      links: [
-        { title: "freeCodeCamp", url: "https://www.freecodecamp.org/" },
-        { title: "The Odin Project", url: "https://www.theodinproject.com/" },
-        { title: "Coursera", url: "https://www.coursera.org/" }
-      ]
-    },
-    {
-      category: "Tools & Platforms",
-      links: [
-        { title: "n8n Automation", url: "https://n8n.io/" },
-        { title: "Make (Integromat)", url: "https://www.make.com/" },
-        { title: "Zapier", url: "https://zapier.com/" }
-      ]
-    },
-    {
-      category: "Documentation",
-      links: [
-        { title: "MDN Web Docs", url: "https://developer.mozilla.org/" },
-        { title: "React Documentation", url: "https://react.dev/" },
-        { title: "Tailwind CSS", url: "https://tailwindcss.com/" }
-      ]
-    }
-  ],
+  resources: {
+    apis: [
+      { title: "REST API Tutorial", url: "https://restfulapi.net/" },
+      { title: "API Design Best Practices", url: "https://www.openapis.org/" },
+      { title: "Postman Learning Center", url: "https://learning.postman.com/" }
+    ],
+    json: [
+      { title: "JSON Overview", url: "https://www.json.org/json-en.html" },
+      { title: "JSON Formatter", url: "https://jsonformatter.org/" }
+    ],
+    promptEngineering: [
+      { title: "Prompt Engineering Guide", url: "https://www.promptingguide.ai/" },
+      { title: "Learn Prompting", url: "https://learnprompting.org/" }
+    ],
+    n8n: [
+      { title: "n8n Documentation", url: "https://docs.n8n.io/" },
+      { title: "n8n Workflow Templates", url: "https://n8n.io/workflows/" }
+    ],
+    ghl: [
+      { title: "GoHighLevel Documentation", url: "https://help.gohighlevel.com/" },
+      { title: "GHL API Reference", url: "https://highlevel.stoplight.io/" }
+    ],
+    claude: [
+      { title: "Claude Documentation", url: "https://docs.anthropic.com/" },
+      { title: "Claude AI Platform", url: "https://claude.ai/" }
+    ],
+    vapi: [
+      { title: "Vapi AI Platform", url: "https://vapi.ai/" },
+      { title: "Voice AI Documentation", url: "https://docs.vapi.ai/" }
+    ],
+    frontend: [
+      { title: "React Documentation", url: "https://react.dev/" },
+      { title: "Tailwind CSS", url: "https://tailwindcss.com/" }
+    ],
+    airtable: [
+      { title: "Airtable Guide", url: "https://airtable.com/guides" },
+      { title: "Airtable API", url: "https://www.airtable.com/developers/web-api" }
+    ],
+    deployment: [
+      { title: "System Design Primer", url: "https://github.com/donnemartin/system-design-primer" },
+      { title: "Deployment Best Practices", url: "https://aws.amazon.com/architecture/" }
+    ]
+  },
   quickReference: {
     apiMethods: [
       { method: "GET", description: "Retrieve data from server" },

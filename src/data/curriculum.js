@@ -331,7 +331,7 @@ export const curriculum = [
   },
   {
     day: 6,
-    week: 2,
+    week: 1,
     title: "Advanced API Routing & Affiliate Systems",
     focus: "Build sophisticated routing logic for affiliate tracking and commission systems",
     status: "integration",
@@ -385,7 +385,7 @@ export const curriculum = [
   },
   {
     day: 7,
-    week: 2,
+    week: 1,
     title: "No-Code SaaS Building & Multi-User Logic",
     focus: "Create multi-tenant SaaS applications without traditional coding",
     status: "saas",
@@ -488,6 +488,327 @@ export const curriculum = [
         title: "Debugging Best Practices",
         url: "https://docs.n8n.io/hosting/logging/",
         description: "n8n logging and debugging guide"
+      }
+    ]
+  }
+  ,
+  {
+    day: 9,
+    week: 2,
+    title: "Capstone Architecture (Backend & Integration)",
+    focus: "Design and architect your capstone project backend systems",
+    status: "capstone",
+    objectives: [
+      "Architect scalable backend systems",
+      "Design database schemas for real applications",
+      "Plan integration touchpoints"
+    ],
+    concepts: [
+      {
+        name: "System Design",
+        explanation: "High-level planning of components, data flow, and infrastructure.",
+        analogy: "Like architectural blueprints before building a house."
+      }
+    ],
+    steps: [
+      {
+        title: "Define project scope",
+        description: "Clearly articulate what your capstone will accomplish.",
+        action: "Write problem statement and success criteria"
+      }
+    ],
+    exercises: [
+      {
+        title: "Architecture Diagram",
+        description: "Create a visual representation of your system architecture.",
+        platform: "Draw.io or Excalidraw",
+        steps: [
+          "Identify all system components",
+          "Map data flows between components",
+          "Note external integrations",
+          "Document APIs and endpoints"
+        ],
+        expected: "Complete architecture diagram"
+      }
+    ],
+    activities: [
+      {
+        title: "Technical Specification",
+        description: "Write a detailed technical spec document.",
+        duration: "60 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "System Design Primer",
+        url: "https://github.com/donnemartin/system-design-primer",
+        description: "Guide to system design interviews and concepts"
+      }
+    ]
+  },
+  {
+    day: 10,
+    week: 2,
+    title: "Proof of Competence (Frontend & Portfolio)",
+    focus: "Build portfolio presentation and demonstrate mastery",
+    status: "capstone",
+    objectives: [
+      "Create a professional portfolio presentation",
+      "Document projects with case studies",
+      "Prepare for technical interviews"
+    ],
+    concepts: [
+      {
+        name: "Portfolio Strategy",
+        explanation: "Showcase projects that demonstrate problem-solving and technical skills.",
+        analogy: "Your portfolio is your greatest hits album - only include your best work."
+      }
+    ],
+    steps: [
+      {
+        title: "Select showcase projects",
+        description: "Choose 3-5 projects that best represent your abilities.",
+        action: "Prioritize complexity and business impact"
+      }
+    ],
+    exercises: [
+      {
+        title: "Case Study Document",
+        description: "Write a detailed case study for your capstone project.",
+        platform: "Notion or Google Docs",
+        steps: [
+          "Describe the problem solved",
+          "Explain your approach and tools",
+          "Show results and metrics",
+          "Include screenshots and demos"
+        ],
+        expected: "Professional case study ready for portfolio"
+      }
+    ],
+    activities: [
+      {
+        title: "Mock Interview Practice",
+        description: "Practice explaining your projects aloud.",
+        duration: "45 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "Portfolio Examples",
+        url: "https://github.com/topics/portfolio",
+        description: "Browse developer portfolio examples"
+      }
+    ]
+  },
+  {
+    day: 11,
+    week: 2,
+    title: "Automation Governance & Documentation",
+    focus: "Create durable operational playbooks for your automations",
+    status: "general",
+    objectives: [
+      "Document automation architecture clearly",
+      "Create governance checkpoints for change management",
+      "Prepare handoff materials for teams"
+    ],
+    concepts: [
+      {
+        name: "Operational Readiness",
+        explanation: "A workflow is only complete once it has clear ownership, monitoring, and documentation."
+      }
+    ],
+    steps: [
+      {
+        title: "Draft SOPs",
+        description: "Write step-by-step documentation for each workflow.",
+        action: "Capture trigger, inputs, outputs, owners, and escalation steps"
+      }
+    ],
+    exercises: [
+      {
+        title: "Runbook Draft",
+        description: "Create a practical runbook for your automation.",
+        platform: "Google Docs",
+        steps: [
+          "List dependencies",
+          "Describe recovery steps",
+          "Add support contacts",
+          "Include screenshots and examples"
+        ],
+        expected: "Operational playbook ready for review"
+      }
+    ],
+    activities: [
+      {
+        title: "Documentation Review",
+        description: "Ask a peer to test your runbook for clarity.",
+        duration: "30 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "Documentation Best Practices",
+        url: "https://www.atlassian.com/team-playbook/plays/documentation",
+        description: "Practical guidance for team documentation"
+      }
+    ]
+  },
+  {
+    day: 12,
+    week: 2,
+    title: "AI Operations & Monitoring",
+    focus: "Keep your automations reliable with monitoring and alerting",
+    status: "general",
+    objectives: [
+      "Set up observability for critical automations",
+      "Define health metrics and failure thresholds",
+      "Build simple alerting for operational issues"
+    ],
+    concepts: [
+      {
+        name: "Observability",
+        explanation: "Monitoring systems by collecting logs, metrics, and traces to understand health in real time."
+      }
+    ],
+    steps: [
+      {
+        title: "Configure monitoring",
+        description: "Set up notifications for failed runs and unusual behavior.",
+        action: "Use built-in alerts or a lightweight dashboard"
+      }
+    ],
+    exercises: [
+      {
+        title: "Alert Setup",
+        description: "Create alerts for a sample workflow failure.",
+        platform: "n8n or your monitoring stack",
+        steps: [
+          "Define failure conditions",
+          "Send notifications to email or Slack",
+          "Document incident response",
+          "Test recovery"
+        ],
+        expected: "Monitoring workflow is active and tested"
+      }
+    ],
+    activities: [
+      {
+        title: "Ops Review Session",
+        description: "Review alert thresholds and response playbooks.",
+        duration: "35 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "SRE Book Excerpts",
+        url: "https://sre.google/workbook/alerting-on-call/",
+        description: "Simple guidance on monitoring and incident response"
+      }
+    ]
+  },
+  {
+    day: 13,
+    week: 2,
+    title: "Client Delivery & Stakeholder Communication",
+    focus: "Learn how to present automations to stakeholders and clients",
+    status: "general",
+    objectives: [
+      "Structure delivery updates for non-technical audiences",
+      "Communicate risks, milestones, and business impact",
+      "Prepare proposal-ready implementation summaries"
+    ],
+    concepts: [
+      {
+        name: "Stakeholder Communication",
+        explanation: "Tailor your message to the audience, focusing on outcomes and trade-offs rather than implementation details."
+      }
+    ],
+    steps: [
+      {
+        title: "Prepare a status update",
+        description: "Summarize progress, blockers, and next steps for a hypothetical client.",
+        action: "Use a one-page update format"
+      }
+    ],
+    exercises: [
+      {
+        title: "Demo Script",
+        description: "Write a concise demo script for showcasing your automation.",
+        platform: "Slides or Google Docs",
+        steps: [
+          "Outline the business problem",
+          "Highlight the workflow benefits",
+          "Add one metric or ROI example",
+          "Practice the full demo"
+        ],
+        expected: "Clear stakeholder-facing presentation"
+      }
+    ],
+    activities: [
+      {
+        title: "Feedback Roundtable",
+        description: "Present your demo and gather peer feedback.",
+        duration: "40 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "Presentation Tips",
+        url: "https://www.ted.com/talks",
+        description: "Examples of effective storytelling and demos"
+      }
+    ]
+  },
+  {
+    day: 14,
+    week: 2,
+    title: "Capstone Review & Launch",
+    focus: "Bring your solution to completion and prepare for real-world deployment",
+    status: "capstone",
+    objectives: [
+      "Review the end-to-end automation solution",
+      "Prepare deployment and transition plans",
+      "Reflect on lessons learned and next steps"
+    ],
+    concepts: [
+      {
+        name: "Launch Readiness",
+        explanation: "A successful deployment is defined by reliability, maintainability, and clear ownership."
+      }
+    ],
+    steps: [
+      {
+        title: "Run final review",
+        description: "Check workflow behavior, documentation, and support readiness.",
+        action: "Complete a final checklist and rehearsal"
+      }
+    ],
+    exercises: [
+      {
+        title: "Launch Plan",
+        description: "Create a deployment plan for your automation project.",
+        platform: "Notion or Google Docs",
+        steps: [
+          "Outline rollout steps",
+          "List support and fallback plans",
+          "Note success metrics",
+          "Document future improvements"
+        ],
+        expected: "Launch-ready plan for your capstone"
+      }
+    ],
+    activities: [
+      {
+        title: "Bootcamp Reflection",
+        description: "Capture your biggest takeaways and next goals.",
+        duration: "30 minutes"
+      }
+    ],
+    resources: [
+      {
+        title: "Deployment Checklist",
+        url: "https://martinfowler.com/articles/continuousDelivery.html",
+        description: "Practical deployment and release guidance"
       }
     ]
   }

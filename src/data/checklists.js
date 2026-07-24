@@ -83,6 +83,38 @@ export const checklists = [
       { task: "Write case study", time: "60 min" },
       { task: "Practice presentation", time: "40 min" }
     ]
+  },
+  {
+    day: 11,
+    items: [
+      { task: "Draft automation SOPs", time: "30 min" },
+      { task: "Document ownership and escalation", time: "25 min" },
+      { task: "Create handoff notes", time: "20 min" }
+    ]
+  },
+  {
+    day: 12,
+    items: [
+      { task: "Set up monitoring hooks", time: "25 min" },
+      { task: "Configure alerts", time: "25 min" },
+      { task: "Test incident response", time: "30 min" }
+    ]
+  },
+  {
+    day: 13,
+    items: [
+      { task: "Prepare stakeholder update", time: "20 min" },
+      { task: "Outline demo narrative", time: "30 min" },
+      { task: "Practice delivery", time: "30 min" }
+    ]
+  },
+  {
+    day: 14,
+    items: [
+      { task: "Run final review", time: "30 min" },
+      { task: "Finalize launch plan", time: "35 min" },
+      { task: "Capture reflections", time: "20 min" }
+    ]
   }
 ];
 

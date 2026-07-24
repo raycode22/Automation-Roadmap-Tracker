@@ -3,7 +3,7 @@ import {
   Target, Zap, BookOpen, Lightbulb, ClipboardList, ExternalLink, 
   CheckCircle2, Clock
 } from 'lucide-react';
-import bootcampData from '../../bootcampData.js';
+import bootcampData from '../../data';
 
 const ConceptCard = ({ concept, darkMode }) => (
   <div 

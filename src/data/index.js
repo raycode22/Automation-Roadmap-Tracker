@@ -3,10 +3,10 @@
  * Provides a unified interface for accessing curriculum, checklists, resources, and instructor data
  */
 
-export { default as curriculum, curriculum } from './curriculum.js';
-export { default as checklists, checklists } from './checklists.js';
-export { default as resources, resources, quickReference } from './resources.js';
-export { default as instructor, instructor } from './instructor.js';
+export { default as curriculum } from './curriculum.js';
+export { default as checklists } from './checklists.js';
+export { default as resources, quickReference } from './resources.js';
+export { default as instructor } from './instructor.js';
 
 // Re-export combined bootcampData object for backward compatibility
 import curriculum from './curriculum.js';

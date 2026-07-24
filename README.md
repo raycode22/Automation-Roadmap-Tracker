@@ -1,46 +1,45 @@
 # Technical Automation Architect Bootcamp
 
-A fully functional, interactive React web application that houses a 2-week intensive bootcamp curriculum. 
-Built with React, Tailwind CSS, and Lucide Icons.
+A React web application delivering a 14-day intensive bootcamp curriculum for Technical Automation Architects. Built with React, Vite, Tailwind CSS, and Recharts.
 
-## 🎯 Features
+## Features
 
-✅ **Responsive Sidebar Navigation** - Collapsible accordions for Week 1 and Week 2 with Day 1-10 lessons
+- **Responsive Sidebar Navigation** - Collapsible navigation for all 14 days organized by week
+- **Progress Tracking** - Mark lessons complete with localStorage persistence
+- **Visual Progress Dashboard** - Analytics showing completion rates, time spent, and activity heatmaps
+- **Dark/Light Theme** - Toggle between themes with system preference detection
+- **Keyboard Shortcuts** - Navigate lessons and control the interface via keyboard
+- **Checklist Validation** - Complete daily checklists before marking lessons done
+- **Time Tracking** - Automatic timer tracks time spent on each lesson
+- **Search and Filter** - Find lessons by title, phase, or topic
+- **Export Functionality** - Export progress data for reporting
+- **Fully Responsive** - Optimized for desktop, tablet, and mobile devices
 
-✅ **Clean Content Area** - Typography-optimized reading pane with markdown-style formatting
+## Curriculum Overview
 
-✅ **Progress Tracking** - Mark lessons complete with persistent localStorage storage
+### Week 1: Foundations
+- Day 1: Advanced Prompt Engineering & AI Workflows
+- Day 2: CRM Architecture & The Lead Engine
+- Day 3: Integration Architecture & n8n Fundamentals
+- Day 4: Voice AI Deployment
+- Day 5: Vibe Coding & Frontend Prototyping
+- Day 6: Advanced API Routing & Affiliate Systems
+- Day 7: No-Code SaaS Building & Multi-User Logic
 
-✅ **Visual Progress Bar** - Real-time progress visualization across 10 lessons
+### Week 2: Advanced Systems
+- Day 8: Systemic Precision & Debugging Protocol
+- Day 9: Capstone Architecture (Backend & Integration)
+- Day 10: Proof of Competence (Frontend & Portfolio)
+- Day 11: Advanced Integrations & Webhooks
+- Day 12: Database Architecture & Data Modeling
+- Day 13: Authentication & Security Patterns
+- Day 14: Final Capstone & Portfolio Review
 
-✅ **Interactive Checkmarks** - Visual feedback for completed lessons in the sidebar
-
-✅ **Minimalist Design** - Clean white/gray aesthetic inspired by The Odin Project and FreeCodeCamp
-
-✅ **Fully Responsive** - Works seamlessly on desktop, tablet, and mobile devices
-
-✅ **Complete Curriculum** - 10 days of technical automation content with learning objectives and hands-on projects
-
-## 📚 Curriculum Overview
-
-### Week 1: Core Logic, AI Integration & CRM Architecture
-- **Day 1**: Advanced Prompt Engineering & AI Workflows
-- **Day 2**: CRM Architecture & The Lead Engine
-- **Day 3**: Integration Architecture & n8n Fundamentals
-- **Day 4**: Voice AI Deployment
-- **Day 5**: Vibe Coding & Frontend Prototyping
-
-### Week 2: SaaS Ecosystems, Scalability & Proof of Competence
-- **Day 6**: Advanced API Routing & Affiliate Systems
-- **Day 7**: No-Code SaaS Building & Multi-User Logic
-- **Day 8**: Systemic Precision & Debugging Protocol
-- **Day 9**: Capstone Architecture (Backend & Integration)
-- **Day 10**: Proof of Competence (Frontend & Portfolio)
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Node.js 16+ and npm
+
+- Node.js 18+ and npm
 
 ### Installation
 
@@ -50,116 +49,80 @@ npm install
 
 # Start development server
 npm run dev
-
-# Open browser to http://localhost:5173
 ```
 
-### Build for Production
+Open your browser to http://localhost:5173
+
+### Production Build
 
 ```bash
 # Create production build
 npm run build
 
-# Preview production build
+# Preview production build locally
 npm run preview
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-automation_project/
-├── src/
-│   ├── main.jsx           # React entry point
-│   └── index.css          # Tailwind CSS
-├── bootcamp-app.jsx       # Main app component
-├── index.html             # HTML template
-├── package.json           # Dependencies
-├── vite.config.js         # Vite configuration
-├── tailwind.config.js     # Tailwind configuration
-├── postcss.config.js      # PostCSS configuration
-└── README.md              # This file
+src/
+├── main.jsx              # Application entry point
+├── bootcamp-app.jsx      # Main application component
+├── components/           # UI components
+│   ├── Dashboard/        # Dashboard and analytics views
+│   ├── Lessons/          # Lesson content and exercises
+│   ├── Resources/        # Reference materials and checklists
+│   └── common/           # Shared UI components
+├── hooks/                # Custom React hooks
+└── data/                 # Curriculum data and resources
 ```
 
-## 🎨 Design System
+## Configuration
 
-### Colors
-- **Primary**: Blue (#2563EB)
-- **Success**: Green (#16A34A)
-- **Background**: White & Gray-50
-- **Text**: Gray-900 & Gray-700
+Key configuration files:
 
-### Typography
-- **Headings**: Bold, clear hierarchy
-- **Body**: 16px with 1.6 line-height for readability
-- **Accent**: Rounded badges and buttons
+- `vite.config.js` - Vite build configuration
+- `tailwind.config.js` - Tailwind CSS theme customization
+- `package.json` - Project dependencies and scripts
 
-## 💾 Data Persistence
+## Data Persistence
 
-The app uses browser localStorage to persist progress:
-- Completed lessons are automatically saved
-- Progress bar updates in real-time
-- Data persists across browser sessions
+The application uses browser localStorage to persist:
 
-## 🔧 Customization
+- Lesson completion status
+- Time tracking data
+- Theme preferences
+- User settings
 
-### Adding New Lessons
+Data persists across browser sessions and is scoped to the domain.
 
-Edit `bootcamp-app.jsx` and extend the `curriculum` object:
+## Deployment
 
-```javascript
-const curriculum = {
-  1: [
-    // Existing days...
-    {
-      day: 11,
-      title: 'Your New Day',
-      focus: 'Focus statement',
-      objectives: ['Objective 1', 'Objective 2'],
-      project: 'Project description'
-    }
-  ]
-}
-```
+### Docker
 
-### Styling
-
-All styling uses Tailwind CSS utility classes. Modify `tailwind.config.js` to customize the theme.
-
-## 🚢 Deployment Options
-
-### Vercel (Recommended)
 ```bash
-npm install -g vercel
-vercel
+docker-compose up
 ```
 
-### Netlify
-```bash
-npm run build
-# Drag and drop the dist folder to Netlify
-```
+The application will be available at http://localhost:3000
 
-### GitHub Pages
-```bash
-npm run build
-# Push dist folder to gh-pages branch
-```
+### Manual Deployment
 
-## 📦 Dependencies
+Build the production assets and serve the `dist` directory using any static file server or hosting platform such as Vercel, Netlify, or GitHub Pages.
 
-- **React 18.2**: UI library
-- **Vite**: Build tool and dev server
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide React**: Icon library
+## Dependencies
 
-## 📝 License
+- React 18
+- Vite
+- Tailwind CSS
+- Recharts
+- Lucide React
+
+## License
 
 This project is open source and available for educational use.
 
-## 🤝 Support
+## Support
 
 For issues or questions, please open an issue in the repository.
-
----
-
-Built with ❤️ for aspiring Technical Automation Architects

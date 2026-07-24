@@ -242,10 +242,12 @@ const LessonView = ({
   checklistState, 
   toggleChecklistItem, 
   areAllChecklistsComplete,
-  lessonStatus
+  lessonStatus,
+  onUpdateTimeSpent
 }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(Date.now());
   
   const dayChecklist = useMemo(() => 
     bootcampData.checklists.find(c => c.day === currentDay), 
@@ -256,6 +258,28 @@ const LessonView = ({
     areAllChecklistsComplete(currentDay), 
     [areAllChecklistsComplete, currentDay]
   );
+
+  // Load saved timer state from localStorage on mount or day change
+  useEffect(() => {
+    try {
+      const savedTimerData = localStorage.getItem(`timer_${currentDay}`);
+      if (savedTimerData) {
+        const { time, timestamp } = JSON.parse(savedTimerData);
+        // Calculate elapsed time since last save (handles page refresh)
+        const now = Date.now();
+        const elapsedSinceSave = Math.floor((now - timestamp) / 1000);
+        setElapsedTime(time + elapsedSinceSave);
+        setLastSaveTime(now);
+      } else {
+        setElapsedTime(0);
+        setLastSaveTime(Date.now());
+      }
+    } catch (error) {
+      console.error('Error loading timer state:', error);
+      setElapsedTime(0);
+      setLastSaveTime(Date.now());
+    }
+  }, [currentDay]);
 
   // Start timer when lesson is viewed and lesson status is in_progress
   useEffect(() => {
@@ -268,16 +292,86 @@ const LessonView = ({
     }
   }, [currentDay, lessonStatus, timerRunning]);
 
-  // Timer interval
+  // Timer interval with periodic saves
   useEffect(() => {
     let interval;
     if (timerRunning) {
       interval = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
+        setElapsedTime(prev => {
+          const newTime = prev + 1;
+          // Save to localStorage every 5 seconds
+          if (newTime % 5 === 0) {
+            try {
+              localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
+                time: newTime,
+                timestamp: Date.now()
+              }));
+            } catch (error) {
+              console.error('Error saving timer state:', error);
+            }
+          }
+          return newTime;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timerRunning]);
+  }, [timerRunning, currentDay]);
+
+  // Save timer state on unmount or day change
+  useEffect(() => {
+    return () => {
+      if (elapsedTime > 0) {
+        try {
+          localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
+            time: elapsedTime,
+            timestamp: Date.now()
+          }));
+        } catch (error) {
+          console.error('Error saving timer state on unmount:', error);
+        }
+      }
+    };
+  }, [elapsedTime, currentDay]);
+
+  // Handle tab visibility changes - pause timer when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && timerRunning) {
+        // Tab is hidden, save current state
+        try {
+          localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
+            time: elapsedTime,
+            timestamp: Date.now()
+          }));
+        } catch (error) {
+          console.error('Error saving timer on visibility change:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [timerRunning, elapsedTime, currentDay]);
+
+  // Listen for storage events from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === `timer_${currentDay}` && e.newValue) {
+        try {
+          const { time, timestamp } = JSON.parse(e.newValue);
+          const now = Date.now();
+          const elapsedSinceSave = Math.floor((now - timestamp) / 1000);
+          setElapsedTime(time + elapsedSinceSave);
+          setLastSaveTime(now);
+        } catch (error) {
+          console.error('Error syncing timer from other tab:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentDay]);
 
   // Format time display as hh:mm:ss
   const formatTime = (seconds) => {

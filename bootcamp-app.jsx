@@ -188,12 +188,6 @@ const BootcampApp = () => {
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
   }, []);
 
-  const toggleCompletion = useCallback((day) => {
-    setCompletedLessons((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-    );
-  }, []);
-
   const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
 
   const lesson = useMemo(() => curriculum.find((l) => l.day === currentDay), [curriculum, currentDay]);

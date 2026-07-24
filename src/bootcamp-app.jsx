@@ -75,9 +75,10 @@ const BootcampApp = () => {
 
   // Handle starting a lesson
   const startLesson = useCallback((day) => {
+    const startTime = Date.now();
     setLessonStatus(prev => ({
       ...prev,
-      [day]: 'in_progress'
+      [day]: { status: 'in_progress', startTime }
     }));
     setCurrentDay(day);
     setActiveTab("lessons");
@@ -110,7 +111,7 @@ const BootcampApp = () => {
 
       setLessonStatus(prev => ({
         ...prev,
-        [day]: 'completed'
+        [day]: { status: 'completed' }
       }));
 
       setCompletedLessons(prev => [...prev, day]);
@@ -118,7 +119,7 @@ const BootcampApp = () => {
       setCompletedLessons(prev => prev.filter(d => d !== day));
       setLessonStatus(prev => ({
         ...prev,
-        [day]: 'not_started'
+        [day]: { status: 'not_started' }
       }));
     }
   }, [completedLessons, lessonStatus, checklistState]);
@@ -145,7 +146,8 @@ const BootcampApp = () => {
   }, [checklistState]);
 
   const handleStartOrComplete = useCallback((day) => {
-    const status = lessonStatus[day];
+    const statusData = lessonStatus[day];
+    const status = statusData?.status;
     if (!status || status === 'not_started') {
       startLesson(day);
     } else if (status === 'in_progress') {
@@ -287,6 +289,7 @@ const BootcampApp = () => {
                 checklistState={checklistState}
                 toggleChecklistItem={toggleChecklistItem}
                 areAllChecklistsComplete={areAllChecklistsComplete}
+                lessonStatus={lessonStatus}
               />
             )}
 

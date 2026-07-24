@@ -241,7 +241,8 @@ const LessonView = ({
   darkMode, 
   checklistState, 
   toggleChecklistItem, 
-  areAllChecklistsComplete 
+  areAllChecklistsComplete,
+  lessonStatus
 }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);

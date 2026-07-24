@@ -12,6 +12,7 @@ import InstructorView from "./components/resources/InstructorView";
 import EmptyState from "./components/common/EmptyState";
 import ToastContainer from "./components/common/ToastContainer";
 import ShortcutModal from "./components/common/ShortcutModal";
+import SearchFilterBar from "./components/SearchFilterBar";
 
 const BootcampApp = () => {
   const [currentDay, setCurrentDay] = useState(1);
@@ -27,6 +28,39 @@ const BootcampApp = () => {
   const [toasts, setToasts] = useState([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [autoStartedLesson, setAutoStartedLesson] = useState(false);
+  
+  // Phase 2: Search, Filter, Sort state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortOption, setSortOption] = useState('default');
+  
+  // Load preferences from localStorage
+  useEffect(() => {
+    const savedSearch = localStorage.getItem('bootcampSearch');
+    if (savedSearch) setSearchTerm(savedSearch);
+    
+    const savedFilter = localStorage.getItem('bootcampFilter');
+    if (savedFilter) setFilterStatus(savedFilter);
+    
+    const savedSort = localStorage.getItem('bootcampSort');
+    if (savedSort) setSortOption(savedSort);
+    
+    // Smart default: auto-expand current week based on progress
+    const savedProgress = localStorage.getItem('bootcampProgress');
+    if (savedProgress) {
+      const completed = JSON.parse(savedProgress);
+      const currentWeek = completed.length > 0 ? 
+        Math.ceil(completed[completed.length - 1] / 5) : 1;
+      setExpandedWeeks(prev => ({ ...prev, [currentWeek]: true }));
+    }
+  }, []);
+  
+  // Save preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('bootcampSearch', searchTerm);
+    localStorage.setItem('bootcampFilter', filterStatus);
+    localStorage.setItem('bootcampSort', sortOption);
+  }, [searchTerm, filterStatus, sortOption]);
 
   const curriculum = bootcampData.lessons;
 
@@ -367,6 +401,68 @@ const BootcampApp = () => {
     [completedLessons.length, curriculum.length]
   );
 
+  // Phase 2: Filtered and sorted curriculum
+  const filteredCurriculum = useMemo(() => {
+    let filtered = [...curriculum];
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(lesson => 
+        lesson.title.toLowerCase().includes(searchLower) ||
+        lesson.description?.toLowerCase().includes(searchLower) ||
+        `day ${lesson.day}`.toLowerCase().includes(searchLower) ||
+        lesson.topics?.some(topic => topic.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(lesson => {
+        const isCompleted = completedLessons.includes(lesson.day);
+        const statusData = lessonStatus[lesson.day];
+        const status = statusData?.status || 'not_started';
+        
+        switch (filterStatus) {
+          case 'completed':
+            return isCompleted;
+          case 'in-progress':
+            return status === 'in_progress';
+          case 'not-started':
+            return !isCompleted && status === 'not_started';
+          case 'bookmarked':
+            return lesson.bookmarked || false;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply sorting
+    if (sortOption !== 'default') {
+      filtered.sort((a, b) => {
+        switch (sortOption) {
+          case 'time-spent':
+            return (lessonTimeSpent[b.day] || 0) - (lessonTimeSpent[a.day] || 0);
+          case 'time-spent-asc':
+            return (lessonTimeSpent[a.day] || 0) - (lessonTimeSpent[b.day] || 0);
+          case 'difficulty':
+            const diffMap = { 'beginner': 1, 'intermediate': 2, 'advanced': 3 };
+            return (diffMap[a.difficulty] || 2) - (diffMap[b.difficulty] || 2);
+          case 'last-accessed':
+            // Would need lastAccessed tracking - fallback to day order
+            return a.day - b.day;
+          case 'name':
+            return a.title.localeCompare(b.title);
+          default:
+            return 0;
+        }
+      });
+    }
+    
+    return filtered;
+  }, [curriculum, searchTerm, filterStatus, sortOption, completedLessons, lessonStatus, lessonTimeSpent]);
+
   const handleNavigate = useCallback((tab) => {
     setActiveTab(tab);
     setSidebarOpen(false);
@@ -429,12 +525,60 @@ const BootcampApp = () => {
             )}
 
             {activeTab === "lessons" && !lesson && (
-              <EmptyState
-                darkMode={darkMode}
-                icon={BookOpen}
-                title="Select a Lesson to Begin"
-                description="Choose a lesson from the sidebar to start learning"
-              />
+              <>
+                {/* Phase 2: Search and Filter Bar */}
+                <SearchFilterBar
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  filterStatus={filterStatus}
+                  setFilterStatus={setFilterStatus}
+                  sortOption={sortOption}
+                  setSortOption={setSortOption}
+                  totalResults={filteredCurriculum.length}
+                  totalCount={curriculum.length}
+                />
+                
+                {/* Display filtered lessons when no specific lesson is selected */}
+                <div className="grid gap-4">
+                  {filteredCurriculum.length === 0 ? (
+                    <EmptyState
+                      darkMode={darkMode}
+                      icon={BookOpen}
+                      title="No lessons found"
+                      description={searchTerm ? `No lessons match "${searchTerm}"` : "Try adjusting your filters"}
+                    />
+                  ) : (
+                    filteredCurriculum.map(lesson => (
+                      <div
+                        key={lesson.day}
+                        onClick={() => handleSelectDay(lesson.day)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all ${
+                          darkMode 
+                            ? 'bg-gray-800 hover:bg-gray-700' 
+                            : 'bg-white hover:bg-gray-50 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg">{lesson.title}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Day {lesson.day} • {lesson.duration || 'Self-paced'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {completedLessons.includes(lesson.day) && (
+                              <span className="text-green-500 text-sm">✓ Complete</span>
+                            )}
+                            <button className="text-blue-500 hover:text-blue-600 text-sm font-medium">
+                              View →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
 
             {activeTab === "lessons" && lesson && (

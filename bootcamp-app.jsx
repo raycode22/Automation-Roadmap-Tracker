@@ -18,6 +18,11 @@ import {
   Calendar,
   Award,
   CheckCircle2,
+  Play,
+  Square,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   BarChart,
@@ -44,28 +49,98 @@ const BootcampApp = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lessonTimeSpent, setLessonTimeSpent] = useState({});
-  const [currentLessonStartTime, setCurrentLessonStartTime] = useState(null);
+  const [lessonStatus, setLessonStatus] = useState({}); // 'not_started', 'in_progress', 'completed'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const curriculum = bootcampData.lessons;
 
-  // Track time spent on lessons
+  // Load progress and theme from localStorage
   useEffect(() => {
-    if (activeTab === "lessons" && currentDay) {
-      setCurrentLessonStartTime(Date.now());
-    } else if (currentLessonStartTime) {
-      const timeSpent = Math.round((Date.now() - currentLessonStartTime) / 1000);
+    const saved = localStorage.getItem("bootcampProgress");
+    if (saved) setCompletedLessons(JSON.parse(saved));
+
+    const savedTime = localStorage.getItem("lessonTimeSpent");
+    if (savedTime) setLessonTimeSpent(JSON.parse(savedTime));
+
+    const savedStatus = localStorage.getItem("lessonStatus");
+    if (savedStatus) setLessonStatus(JSON.parse(savedStatus));
+
+    const savedTheme = localStorage.getItem("bootcampTheme");
+    if (savedTheme !== null) {
+      setDarkMode(JSON.parse(savedTheme));
+    } else {
+      const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDarkMode(systemDarkMode);
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleThemeChange = (e) => {
+      const savedTheme = localStorage.getItem("bootcampTheme");
+      if (savedTheme === null) {
+        setDarkMode(e.matches);
+      }
+    };
+    mediaQuery.addEventListener("change", handleThemeChange);
+    return () => mediaQuery.removeEventListener("change", handleThemeChange);
+  }, []);
+
+  // Save progress and theme to localStorage
+  useEffect(() => {
+    localStorage.setItem("bootcampProgress", JSON.stringify(completedLessons));
+    localStorage.setItem("bootcampTheme", JSON.stringify(darkMode));
+    localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
+    localStorage.setItem("lessonStatus", JSON.stringify(lessonStatus));
+  }, [completedLessons, darkMode, lessonTimeSpent, lessonStatus]);
+
+  // Handle starting a lesson
+  const startLesson = useCallback((day) => {
+    setLessonStatus(prev => ({
+      ...prev,
+      [day]: 'in_progress'
+    }));
+    setCurrentDay(day);
+    setActiveTab("lessons");
+  }, []);
+
+  // Handle completing a lesson with time tracking
+  const toggleCompletion = useCallback((day) => {
+    const isCurrentlyCompleted = completedLessons.includes(day);
+    
+    if (!isCurrentlyCompleted) {
+      // Mark as complete and record time
+      const endTime = Date.now();
+      const startTime = lessonStatus[day]?.startTime || endTime;
+      const timeSpent = Math.round((endTime - startTime) / 1000);
+      
       setLessonTimeSpent(prev => ({
         ...prev,
-        [currentDay]: (prev[currentDay] || 0) + timeSpent
+        [day]: (prev[day] || 0) + timeSpent
       }));
-      setCurrentLessonStartTime(null);
+      
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: 'completed'
+      }));
+      
+      setCompletedLessons(prev => [...prev, day]);
+    } else {
+      // Mark as incomplete
+      setCompletedLessons(prev => prev.filter(d => d !== day));
+      setLessonStatus(prev => ({
+        ...prev,
+        [day]: 'not_started'
+      }));
     }
-  }, [activeTab, currentDay]);
+  }, [completedLessons, lessonStatus]);
 
-  // Save lesson time to localStorage
-  useEffect(() => {
-    localStorage.setItem("lessonTimeSpent", JSON.stringify(lessonTimeSpent));
-  }, [lessonTimeSpent]);
+  const handleStartOrComplete = useCallback((day) => {
+    const status = lessonStatus[day];
+    if (!status || status === 'not_started') {
+      startLesson(day);
+    } else if (status === 'in_progress') {
+      toggleCompletion(day);
+    }
+  }, [lessonStatus, startLesson, toggleCompletion]);
 
   // Analytics calculations
   const analytics = useMemo(() => {

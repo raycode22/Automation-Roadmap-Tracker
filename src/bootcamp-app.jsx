@@ -100,9 +100,23 @@ const BootcampApp = () => {
         return;
       }
 
-      const endTime = Date.now();
-      const startTime = lessonStatus[day]?.startTime || endTime;
-      const timeSpent = Math.round((endTime - startTime) / 1000);
+      // Get time from live timer storage first, fallback to startTime calculation
+      let timeSpent = 0;
+      try {
+        const timerData = localStorage.getItem(`timer_${day}`);
+        if (timerData) {
+          const { time } = JSON.parse(timerData);
+          timeSpent = time;
+          // Clean up timer storage after using it
+          localStorage.removeItem(`timer_${day}`);
+        }
+      } catch (error) {
+        console.error('Error reading timer data:', error);
+        // Fallback to old method
+        const endTime = Date.now();
+        const startTime = lessonStatus[day]?.startTime || endTime;
+        timeSpent = Math.round((endTime - startTime) / 1000);
+      }
 
       setLessonTimeSpent(prev => ({
         ...prev,
@@ -121,6 +135,12 @@ const BootcampApp = () => {
         ...prev,
         [day]: { status: 'not_started' }
       }));
+      // Also remove any stored timer data
+      try {
+        localStorage.removeItem(`timer_${day}`);
+      } catch (error) {
+        console.error('Error removing timer data:', error);
+      }
     }
   }, [completedLessons, lessonStatus, checklistState]);
 

@@ -10,8 +10,30 @@ import RecordCard from './RecordCard';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, lessonTimeSpent, darkMode }) => {
+  // Helper function to format seconds as HH:MM:SS
+  const formatTimeFull = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  // Helper function to format seconds as readable time string
+  const formatTimeReadable = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${mins}m ${secs}s`;
+    } else if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+  
   const totalTimeSpent = useMemo(() => {
-    return Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0) / 60);
+    return Math.round(Object.values(lessonTimeSpent).reduce((a, b) => a + b, 0));
   }, [lessonTimeSpent]);
 
   return (
@@ -55,7 +77,7 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
         <StatCard
           icon={Clock}
           label="Time Spent"
-          value={`${totalTimeSpent}m`}
+          value={formatTimeFull(totalTimeSpent)}
           subtext="total learning time"
           colorClass={darkMode ? 'bg-purple-900 bg-opacity-20 border-purple-700' : 'bg-purple-50 border-purple-200'}
           iconColor="text-purple-500"
@@ -89,7 +111,7 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
               />
               <YAxis
                 tick={{ fill: darkMode ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-                label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: darkMode ? "#9ca3af" : "#6b7280" }}
+                label={{ value: 'Time (HH:MM:SS)', angle: -90, position: 'insideLeft', fill: darkMode ? "#9ca3af" : "#6b7280" }}
               />
               <Tooltip
                 contentStyle={{
@@ -98,7 +120,7 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
                   borderRadius: '8px'
                 }}
                 labelStyle={{ color: darkMode ? "#fff" : "#111" }}
-                formatter={(value) => [`${Math.round(value)}s`, 'Time']}
+                formatter={(value) => [formatTimeFull(Math.round(value)), 'Time']}
               />
               <Bar dataKey="timeSpent" fill="#3b82f6" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -145,7 +167,7 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
             title="Most Challenging Lesson"
             icon={Clock}
             value={`Day ${analytics.longestLesson.day}: ${analytics.longestLesson.title}`}
-            metric={`${Math.round(analytics.longestLesson.timeSpent / 60)} minutes`}
+            metric={formatTimeReadable(analytics.longestLesson.timeSpent)}
             message="This lesson took the longest time - consider reviewing the concepts again!"
             colorClass={darkMode ? 'bg-red-900 bg-opacity-20 border-red-700' : 'bg-red-50 border-red-200'}
             textColor={darkMode ? 'text-red-300' : 'text-red-700'}
@@ -159,7 +181,7 @@ const Dashboard = ({ analytics, completedLessons, curriculum, progressPercent, l
             title="Quickest Lesson"
             icon={Trophy}
             value={`Day ${analytics.fastestLesson.day}: ${analytics.fastestLesson.title}`}
-            metric={`${analytics.fastestLesson.timeSpent} seconds`}
+            metric={formatTimeReadable(analytics.fastestLesson.timeSpent)}
             message="You mastered this one quickly! Great job understanding these concepts."
             colorClass={darkMode ? 'bg-green-900 bg-opacity-20 border-green-700' : 'bg-green-50 border-green-200'}
             textColor={darkMode ? 'text-green-300' : 'text-green-700'}

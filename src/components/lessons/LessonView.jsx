@@ -243,7 +243,8 @@ const LessonView = ({
   toggleChecklistItem, 
   areAllChecklistsComplete,
   lessonStatus,
-  onUpdateTimeSpent
+  startLesson,
+  isDayUnlocked
 }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -281,17 +282,7 @@ const LessonView = ({
     }
   }, [currentDay]);
 
-  // Start timer when lesson is viewed and lesson status is in_progress
-  useEffect(() => {
-    const statusData = lessonStatus?.[currentDay];
-    const status = statusData?.status;
-    if (status === 'in_progress' && !timerRunning) {
-      setTimerRunning(true);
-    } else if (status !== 'in_progress' && timerRunning) {
-      setTimerRunning(false);
-    }
-  }, [currentDay, lessonStatus, timerRunning]);
-
+  // Timer only runs when explicitly started by user
   // Timer interval with periodic saves
   useEffect(() => {
     let interval;
@@ -393,6 +384,27 @@ const LessonView = ({
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Timer control functions
+  const handleStartTimer = () => {
+    setTimerRunning(true);
+  };
+
+  const handlePauseTimer = () => {
+    setTimerRunning(false);
+  };
+
+  const handleResetTimer = () => {
+    setTimerRunning(false);
+    setElapsedTime(0);
+    try {
+      localStorage.removeItem(`timer_${currentDay}`);
+    } catch (error) {
+      console.error('Error removing timer data:', error);
+    }
+  };
+
+  const isLessonStarted = elapsedTime > 0 || timerRunning;
+
   return (
     <>
       <div className="mb-8 md:mb-10">
@@ -423,7 +435,74 @@ const LessonView = ({
             <Clock size={16} aria-hidden="true" />
             Time: {formatTime(elapsedTime)}
           </span>
+          {/* Timer Controls - Show when lesson is started or in progress */}
+          {(isLessonStarted || timerRunning) && (
+            <div className="flex items-center gap-2">
+              {!timerRunning ? (
+                <button
+                  onClick={handleStartTimer}
+                  className={`px-3 py-1 text-xs md:text-sm font-semibold rounded flex items-center gap-1 transition ${
+                    darkMode 
+                      ? 'bg-green-700 hover:bg-green-600 text-white' 
+                      : 'bg-green-600 hover:bg-green-500 text-white'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Resume
+                </button>
+              ) : (
+                <button
+                  onClick={handlePauseTimer}
+                  className={`px-3 py-1 text-xs md:text-sm font-semibold rounded flex items-center gap-1 transition ${
+                    darkMode 
+                      ? 'bg-yellow-700 hover:bg-yellow-600 text-white' 
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                  Pause
+                </button>
+              )}
+              <button
+                onClick={handleResetTimer}
+                className={`px-3 py-1 text-xs md:text-sm font-semibold rounded flex items-center gap-1 transition ${
+                  darkMode 
+                    ? 'bg-red-700 hover:bg-red-600 text-white' 
+                    : 'bg-red-600 hover:bg-red-500 text-white'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+                Reset
+              </button>
+            </div>
+          )}
         </div>
+        {/* Start Lesson Button - Only show when lesson hasn't been started */}
+        {!isLessonStarted && !isCompleted(lesson.day) && (
+          <div className="mb-4">
+            <button
+              onClick={handleStartTimer}
+              className={`px-6 py-3 text-base font-bold rounded-lg flex items-center gap-2 transition ${
+                darkMode 
+                  ? 'bg-blue-700 hover:bg-blue-600 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Start Learning Session
+            </button>
+          </div>
+        )}
         <h1 
           className={`text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 leading-tight ${
             darkMode ? 'text-white' : 'text-gray-900'

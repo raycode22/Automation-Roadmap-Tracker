@@ -249,6 +249,7 @@ const LessonView = ({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(Date.now());
+  const [lessonStarted, setLessonStarted] = useState(false);
   
   const dayChecklist = useMemo(() => 
     bootcampData.checklists.find(c => c.day === currentDay), 
@@ -261,24 +262,30 @@ const LessonView = ({
   );
 
   // Load saved timer state from localStorage on mount or day change
+  // Only restore if lesson was previously started
   useEffect(() => {
     try {
       const savedTimerData = localStorage.getItem(`timer_${currentDay}`);
-      if (savedTimerData) {
+      const savedLessonStarted = localStorage.getItem(`lesson_started_${currentDay}`);
+      
+      if (savedTimerData && savedLessonStarted === 'true') {
         const { time, timestamp } = JSON.parse(savedTimerData);
         // Calculate elapsed time since last save (handles page refresh)
         const now = Date.now();
         const elapsedSinceSave = Math.floor((now - timestamp) / 1000);
         setElapsedTime(time + elapsedSinceSave);
         setLastSaveTime(now);
+        setLessonStarted(true);
       } else {
         setElapsedTime(0);
         setLastSaveTime(Date.now());
+        setLessonStarted(false);
       }
     } catch (error) {
       console.error('Error loading timer state:', error);
       setElapsedTime(0);
       setLastSaveTime(Date.now());
+      setLessonStarted(false);
     }
   }, [currentDay]);
 
@@ -286,7 +293,7 @@ const LessonView = ({
   // Timer interval with periodic saves
   useEffect(() => {
     let interval;
-    if (timerRunning) {
+    if (timerRunning && lessonStarted) {
       interval = setInterval(() => {
         setElapsedTime(prev => {
           const newTime = prev + 1;
@@ -306,28 +313,29 @@ const LessonView = ({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timerRunning, currentDay]);
+  }, [timerRunning, lessonStarted, currentDay]);
 
   // Save timer state on unmount or day change
   useEffect(() => {
     return () => {
-      if (elapsedTime > 0) {
+      if (elapsedTime > 0 && lessonStarted) {
         try {
           localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
             time: elapsedTime,
             timestamp: Date.now()
           }));
+          localStorage.setItem(`lesson_started_${currentDay}`, 'true');
         } catch (error) {
           console.error('Error saving timer state on unmount:', error);
         }
       }
     };
-  }, [elapsedTime, currentDay]);
+  }, [elapsedTime, lessonStarted, currentDay]);
 
   // Handle tab visibility changes - pause timer when tab is hidden
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && timerRunning) {
+      if (document.hidden && timerRunning && lessonStarted) {
         // Tab is hidden, save current state
         try {
           localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
@@ -342,7 +350,7 @@ const LessonView = ({
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [timerRunning, elapsedTime, currentDay]);
+  }, [timerRunning, elapsedTime, lessonStarted, currentDay]);
 
   // Listen for storage events from other tabs
   useEffect(() => {
@@ -386,7 +394,9 @@ const LessonView = ({
 
   // Timer control functions
   const handleStartTimer = () => {
+    setLessonStarted(true);
     setTimerRunning(true);
+    localStorage.setItem(`lesson_started_${currentDay}`, 'true');
   };
 
   const handlePauseTimer = () => {
@@ -396,14 +406,34 @@ const LessonView = ({
   const handleResetTimer = () => {
     setTimerRunning(false);
     setElapsedTime(0);
+    setLessonStarted(false);
     try {
       localStorage.removeItem(`timer_${currentDay}`);
+      localStorage.removeItem(`lesson_started_${currentDay}`);
     } catch (error) {
       console.error('Error removing timer data:', error);
     }
   };
 
-  const isLessonStarted = elapsedTime > 0 || timerRunning;
+  // Stop timer when lesson is marked complete
+  const handleToggleComplete = () => {
+    // If lesson is being marked as complete, stop the timer
+    if (!isCompleted(currentDay)) {
+      setTimerRunning(false);
+      // Save final timer state before marking complete
+      try {
+        localStorage.setItem(`timer_${currentDay}`, JSON.stringify({
+          time: elapsedTime,
+          timestamp: Date.now()
+        }));
+      } catch (error) {
+        console.error('Error saving final timer state:', error);
+      }
+    }
+    toggleCompletion(currentDay);
+  };
+
+  const isLessonStarted = lessonStarted;
 
   return (
     <>
@@ -426,17 +456,19 @@ const LessonView = ({
               Completed
             </span>
           )}
-          {/* Live Timer Display */}
-          <span
-            className={`inline-flex items-center gap-1 px-3 py-1 text-xs md:text-sm font-semibold rounded ${
-              darkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-700'
-            }`}
-          >
-            <Clock size={16} aria-hidden="true" />
-            Time: {formatTime(elapsedTime)}
-          </span>
+          {/* Live Timer Display - Only show when lesson is started */}
+          {isLessonStarted && (
+            <span
+              className={`inline-flex items-center gap-1 px-3 py-1 text-xs md:text-sm font-semibold rounded ${
+                darkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-700'
+              }`}
+            >
+              <Clock size={16} aria-hidden="true" />
+              Time: {formatTime(elapsedTime)}
+            </span>
+          )}
           {/* Timer Controls - Show when lesson is started or in progress */}
-          {(isLessonStarted || timerRunning) && (
+          {isLessonStarted && (
             <div className="flex items-center gap-2">
               {!timerRunning ? (
                 <button
@@ -687,7 +719,7 @@ const LessonView = ({
         }`}
       >
         <button
-          onClick={() => toggleCompletion(currentDay)}
+          onClick={handleToggleComplete}
           disabled={!allChecklistsComplete && !isCompleted(currentDay)}
           className={`w-full py-4 rounded-lg font-bold text-lg transition flex items-center justify-center gap-3 ${
             isCompleted(currentDay)

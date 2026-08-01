@@ -27,7 +27,6 @@ const BootcampApp = () => {
   const [checklistState, setChecklistState] = useState({});
   const [toasts, setToasts] = useState([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [autoStartedLesson, setAutoStartedLesson] = useState(false);
   
   // Phase 2: Search, Filter, Sort state
   const [searchTerm, setSearchTerm] = useState('');
@@ -269,30 +268,8 @@ const BootcampApp = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab, lesson, currentDay, lessonStatus, startLesson, toggleCompletion, darkMode, addToast, showShortcuts]);
 
-  // Auto-start timer when entering a lesson for the first time
-  useEffect(() => {
-    if (activeTab === 'lessons' && lesson && !autoStartedLesson) {
-      const statusData = lessonStatus?.[lesson.day];
-      const status = statusData?.status;
-      
-      if (!status || status === 'not_started') {
-        // Auto-start the lesson
-        startLesson(lesson.day);
-        setAutoStartedLesson(true);
-        addToast({
-          type: 'info',
-          title: 'Timer Started',
-          message: `Learning session started for Day ${lesson.day}`,
-          duration: 3000,
-        });
-      }
-    }
-    
-    // Reset auto-start flag when changing lessons
-    if (activeTab !== 'lessons' || !lesson) {
-      setAutoStartedLesson(false);
-    }
-  }, [activeTab, lesson?.day, autoStartedLesson, lessonStatus, startLesson, addToast]);
+  // Remove auto-start functionality - lessons should only start when user explicitly clicks Start
+  // This effect has been removed to prevent automatic lesson start
 
   // Load progress and theme from localStorage
   useEffect(() => {
@@ -389,6 +366,13 @@ const BootcampApp = () => {
 
   const isCompleted = useCallback((day) => completedLessons.includes(day), [completedLessons]);
 
+  // Check if a day is unlocked (sequential progression)
+  const isDayUnlocked = useCallback((day) => {
+    if (day === 1) return true;
+    // Day is unlocked if the previous day is completed
+    return completedLessons.includes(day - 1);
+  }, [completedLessons]);
+
   const progressPercent = useMemo(() =>
     Math.round((completedLessons.length / curriculum.length) * 100),
     [completedLessons.length, curriculum.length]
@@ -475,8 +459,18 @@ const BootcampApp = () => {
       setCurrentDay(1);
       setActiveTab("dashboard");
       setExpandedWeeks({ 1: true, 2: false });
+      // Clear all timer data from localStorage
+      curriculum.forEach(lesson => {
+        localStorage.removeItem(`timer_${lesson.day}`);
+      });
+      addToast({
+        type: 'success',
+        title: 'Progress Reset',
+        message: 'All learning progress has been reset successfully.',
+        duration: 3000,
+      });
     }
-  }, []);
+  }, [curriculum, addToast]);
 
   return (
     <ErrorBoundary darkMode={darkMode}>
@@ -492,6 +486,7 @@ const BootcampApp = () => {
           curriculum={curriculum}
           progressPercent={progressPercent}
           lessonStatus={lessonStatus}
+          isDayUnlocked={isDayUnlocked}
           onToggleWeek={toggleWeek}
           onSelectDay={handleSelectDay}
           onNavigate={handleNavigate}
@@ -585,6 +580,8 @@ const BootcampApp = () => {
                 toggleChecklistItem={toggleChecklistItem}
                 areAllChecklistsComplete={areAllChecklistsComplete}
                 lessonStatus={lessonStatus}
+                startLesson={startLesson}
+                isDayUnlocked={isDayUnlocked}
               />
             )}
 

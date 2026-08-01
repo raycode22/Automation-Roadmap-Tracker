@@ -38,6 +38,7 @@ const Sidebar = ({
   curriculum,
   progressPercent,
   lessonStatus,
+  isDayUnlocked,
   onToggleWeek,
   onSelectDay,
   onNavigate,
@@ -256,6 +257,7 @@ const Sidebar = ({
                     lessonStatus={lessonStatus}
                     expandedWeeks={expandedWeeks}
                     darkMode={darkMode}
+                    isDayUnlocked={isDayUnlocked}
                     onToggleWeek={onToggleWeek}
                     onSelectDay={onSelectDay}
                     onStartLesson={onStartLesson}
@@ -298,6 +300,7 @@ const WeekSection = ({
   lessonStatus,
   expandedWeeks,
   darkMode,
+  isDayUnlocked,
   onToggleWeek,
   onSelectDay,
   onStartLesson,
@@ -335,12 +338,20 @@ const WeekSection = ({
         <div className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
           {lessons.map((item) => {
             const status = getLessonStatus(item.day);
+            const unlocked = isDayUnlocked(item.day);
+            const isComp = isCompleted(item.day);
+            
             return (
               <div key={item.day} className="flex items-stretch">
                 <button
                   onClick={() => onSelectDay(item.day)}
+                  disabled={!unlocked}
                   className={`flex-1 px-4 md:px-6 py-2 md:py-3 text-left flex items-center gap-3 transition text-sm md:text-base ${
-                    currentDay === item.day
+                    !unlocked
+                      ? darkMode
+                        ? "bg-gray-800 cursor-not-allowed opacity-50"
+                        : "bg-gray-100 cursor-not-allowed opacity-50"
+                      : currentDay === item.day
                       ? darkMode
                         ? "bg-blue-900 border-l-4 border-blue-400"
                         : "bg-blue-50 border-l-4 border-blue-600"
@@ -349,7 +360,14 @@ const WeekSection = ({
                       : "hover:bg-gray-100"
                   }`}
                 >
-                  {isCompleted(item.day) ? (
+                  {!unlocked ? (
+                    <Circle
+                      size={18}
+                      className={`flex-shrink-0 ${
+                        darkMode ? "text-gray-600" : "text-gray-400"
+                      }`}
+                    />
+                  ) : isComp ? (
                     <CheckCircle2
                       size={18}
                       className="text-green-500 flex-shrink-0"
@@ -369,7 +387,11 @@ const WeekSection = ({
                   )}
                   <span
                     className={`${
-                      currentDay === item.day
+                      !unlocked
+                        ? darkMode
+                          ? "text-gray-500"
+                          : "text-gray-400"
+                        : currentDay === item.day
                         ? darkMode
                           ? "font-semibold text-white"
                           : "font-semibold text-gray-900"
@@ -379,10 +401,11 @@ const WeekSection = ({
                     }`}
                   >
                     Day {item.day}
+                    {!unlocked && " (Locked)"}
                   </span>
                 </button>
-                {/* Start/Complete button in sidebar */}
-                {!isCompleted(item.day) && status !== 'in_progress' && (
+                {/* Start/Complete button in sidebar - only show for unlocked days */}
+                {unlocked && !isComp && status !== 'in_progress' && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -398,7 +421,7 @@ const WeekSection = ({
                     <Play size={14} />
                   </button>
                 )}
-                {status === 'in_progress' && (
+                {unlocked && status === 'in_progress' && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -413,6 +436,20 @@ const WeekSection = ({
                   >
                     <Play size={14} />
                   </button>
+                )}
+                {/* Lock icon for locked days */}
+                {!unlocked && (
+                  <div
+                    className={`px-3 flex items-center justify-center ${
+                      darkMode ? "text-gray-600" : "text-gray-400"
+                    }`}
+                    title="Complete the previous day to unlock"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  </div>
                 )}
               </div>
             );
